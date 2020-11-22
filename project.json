@@ -1,0 +1,27 @@
+{
+	"file" : "index.html",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"cp_visualiser" : 
+			{
+				"order" : 100,
+				"text" : "Visualiser foreground",
+				"type" : "color",
+				"value" : "1 0 0"
+			},
+			"schemecolor" : 
+			{
+				"order" : 0,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "1 0 0"
+			}
+		},
+		"supportsaudioprocessing" : true
+	},
+	"title" : "Visualiser",
+	"type" : "web",
+	"version" : "0.0.1"
+}

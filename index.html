@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Test</title>
+	<link rel="stylesheet" href="css/body.css" />
+	<link rel="stylesheet" href="css/test.css" />
+</head>
+<body>
+<div id="test">asoidhasduh</div>
+<div id="test2">duh</div>
+
+<script src="js/star.js"></script>
+<script src="js/config.js"></script>
+<script src="js/screenManager.js"></script>
+
+<script>
+	const screenManager = new ScreenManager();
+
+	function audioListener(audio) {
+		screenManager.audio = (audio);
+	}
+
+	function applyProperties(properties) {
+		screenManager.config = properties;
+		document.getElementById('test2').innerText = JSON.stringify(screenManager.config.config);
+	}
+
+	//TODO on start generate random positions
+
+	//
+	// audioListener([10, 2, 3, 5, ]);
+
+	window.onload = function() {
+		window.wallpaperRegisterAudioListener(audioListener);
+		window.wallpaperPropertyListener = {
+			applyUserProperties: applyProperties
+		}
+	};
+
+	function randomNumber(min, max) {
+		return Math.random() * (max - min) + min;
+
+	}
+</script>
+
+</body>
+</html>
