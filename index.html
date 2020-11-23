@@ -9,6 +9,7 @@
 <div id="test">asoidhasduh</div>
 <div id="test2">duh</div>
 
+<script src="js/Vec2.js"></script>
 <script src="js/star.js"></script>
 <script src="js/config.js"></script>
 <script src="js/screenManager.js"></script>
@@ -22,16 +23,19 @@
 
 	function applyProperties(properties) {
 		screenManager.config = properties;
-		document.getElementById('test2').innerText = JSON.stringify(screenManager.config.config);
+		// document.getElementById('test2').innerText = JSON.stringi fy(screenManager.config.config);
 	}
 
 	//TODO on start generate random positions
 	//TODO collide snow with icons
+	//TODO fade bars when lowering
 
 	//
 	// audioListener([10, 2, 3, 5, ]);
 
 	window.onload = function() {
+		// document.getElementById('test2').innerText = JSON.stringify(JSON.parse(window));
+
 		window.wallpaperRegisterAudioListener(audioListener);
 		window.wallpaperPropertyListener = {
 			applyUserProperties: applyProperties
@@ -40,8 +44,12 @@
 
 	function randomNumber(min, max) {
 		return Math.random() * (max - min) + min;
-
 	}
+
+	function clamp(val, min, max) {
+		return Math.max(min, Math.min(val, max));
+	}
+
 </script>
 
 </body>

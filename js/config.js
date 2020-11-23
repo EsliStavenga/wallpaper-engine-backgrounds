@@ -27,8 +27,8 @@ class Config {
 
 	}
 
-	getConfigOption(option) {
-		return this.config[option] || '';
+	getConfigOption(option, _default = '') {
+		return this.config[option]?.value || _default;
 	}
 
 

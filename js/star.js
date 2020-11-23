@@ -1,7 +1,6 @@
 class Star {
 
-	x;
-	y;
+	position;
 	diameter;
 	gravity;
 	velocity;
@@ -15,10 +14,9 @@ class Star {
 		this.velocity = randomNumber(35, 67);
 
 		const halfDiameter = this.diameter / 2;
+		this.position = new Vec2(-halfDiameter, randomNumber(halfDiameter , screen.height - halfDiameter));
 
-		this.x = -halfDiameter ;
-		this.y = randomNumber(halfDiameter , screen.height - halfDiameter);
-		this.targetY = (this.gravity > 0 ? randomNumber(this.y, this.y + 100) : randomNumber(this.y - 100, this.y));
+		this.targetY = (this.gravity > 0 ? randomNumber(this.position.y, this.position.y + 100) : randomNumber(this.position.y - 100, this.position.y));
 	}
 
 	isSafeToDestroy() {
@@ -26,24 +24,24 @@ class Star {
 	}
 
 	update = (dt) => {
-		this.y += this.gravity * dt;
-		this.x += this.velocity * dt;
+		this.position.y += this.gravity * dt;
+		this.position.x += this.velocity * dt;
 
 		if(this.gravity !== this.targetGravity) {
 			this.gravity += (this.targetGravity > this.gravity ? 10 : -10) / 100;
 		}
 
 		//bob the stars instead of just going in a straight line
-		if(this.gravity > 0 && this.y >= this.targetY || this.gravity < 0 && this.y <= this.targetY) {
+		if(this.gravity > 0 && this.position.y >= this.targetY || this.gravity < 0 && this.position.y <= this.targetY) {
 			//smooth this
 			this.targetGravity = randomNumber(-25, 25);
-			this.targetY = (this.gravity > 0 ? randomNumber(this.y, this.y + 100) : randomNumber(this.y - 100, this.y));
+			this.targetY = (this.gravity > 0 ? randomNumber(this.position.y, this.position.y + 100) : randomNumber(this.position.y - 100, this.position.y));
 		}
 	}
 
 	draw = (context) => {
-		const centerX = this.x;
-		const centerY = this.y;
+		const centerX = this.position.x;
+		const centerY = this.position.y;
 		const radius = this.diameter;
 
 		context.beginPath();
@@ -53,7 +51,7 @@ class Star {
 	}
 
 	isOutOfFrame() {
-		return this.y > screen.height || this.x > screen.width;
+		return this.position.y > screen.height || this.position.x > screen.width;
 	}
 }
 
