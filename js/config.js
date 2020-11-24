@@ -1,14 +1,27 @@
 class Config {
 
 	defaultColorOption = '0.76470588235 0.76470588235 0.76470588235';
-	_config = {};
+	#config = {};
+
+	static #instance = undefined;
 
 	get config() {
-		return this._config;
+		return this.#config;
 	}
 
 	set config(values) {
-		Object.assign(this._config, values);
+		Object.assign(this.#config, values);
+	}
+
+	constructor() {
+	}
+
+	static getInstance() {
+		if(!this.#instance) {
+			this.#instance = new this();
+		}
+
+		return this.#instance;
 	}
 
 	/**
@@ -19,7 +32,7 @@ class Config {
 	 * @return {string} rgb(r, g ,b)
 	 */
 	getColorOption(option) {
-		const value = this.config[option]?.value || this.defaultColorOption;
+		const value = this.config[option]?.value ?? this.defaultColorOption;
 		const normalizedArray = value.split(' ');
 		const rgbArray = normalizedArray.map(x => Math.round(x * 255));
 
@@ -28,7 +41,7 @@ class Config {
 	}
 
 	getConfigOption(option, _default = '') {
-		return this.config[option]?.value || _default;
+		return this.config[option]?.value ?? _default;
 	}
 
 

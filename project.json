@@ -6,7 +6,7 @@
 		{
 			"cp_visualiser" : 
 			{
-				"order" : 100,
+				"order" : 98,
 				"text" : "Visualiser foreground",
 				"type" : "color",
 				"value" : "1 0 0"
@@ -17,6 +17,26 @@
 				"text" : "ui_browse_properties_scheme_color",
 				"type" : "color",
 				"value" : "1 0 0"
+			},
+			"slider_bar_timeout" :
+			{
+				"max" : 1,
+				"min" : 0,
+				"step": 0.01,
+				"order" : 99,
+				"text" : "The timeout before a bar starts dropping again",
+				"type" : "slider",
+				"value" : 0.05
+			},
+			"slider_height_amplifier" :
+			{
+				"max" : 2,
+				"min" : 1,
+				"step": 0.1,
+				"order" : 100,
+				"text" : "The amplifier for the visualiser bars' height",
+				"type" : "slider",
+				"value" : 1
 			},
 			"slider_bar_width" : 
 			{
@@ -49,26 +69,26 @@
 				"order" : 104,
 				"text" : "The second gradient for the visualiser bars",
 				"type" : "color",
-				"value" : "0.96 0.01 0.96"
+				"value" : "0 1 0.86666666666"
 			},
 			"cp_gradient_bar_2" :
 			{
 				"order" : 105,
 				"text" : "The third gradient for the visualiser bars",
 				"type" : "color",
-				"value" : "0.96 0.01 0.96"
+				"value" : "0.02745098039 0.39607843137 0.89019607843"
 			},
 			"cp_gradient_bar_3" :
 			{
 				"order" : 106,
 				"text" : "The fourth gradient for the visualiser bars",
 				"type" : "color",
-				"value" : "0.96 0.01 0.96"
+				"value" : "1 0.64705882352 0"
 			}
 		},
 		"supportsaudioprocessing" : true
 	},
 	"title" : "Visualiser",
 	"type" : "web",
-	"version" : 0
+	"version" : "0.1.1"
 }

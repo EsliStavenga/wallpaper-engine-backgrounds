@@ -1,28 +1,44 @@
 class ScreenManager {
 
-	stars = [];
-	maxStarCount;
-	context;
-	lastFrameDateTime;
-	audio = [];
-	_config = new Config();
-	dimensions;
-	visualiserBarsGradient;
+	#config = Config.getInstance();
+	#snowflakes = [];
+	#visualiserBars = [];
+
+	#maxSnowflakeCount;
+	#context;
+	#lastFrameDateTime;
+	#dimensions;
+
+	set audio(values) {
+		// values = ;
+
+		//only loop over left ear
+		values.splice(0, values.length / 2).forEach((value, index) => {
+			if(!this.#visualiserBars[index]) {
+				this.#visualiserBars.push(new Bar(this.config.getConfigOption('slider_bar_width', 15), value));
+			}
+
+			//okay so this looks hacky, however it's not
+			//@line 16 we splice the values, which returns the first half off the array AKA the left channel
+			//That also changes the reference of values to only contain whatever is left after splicing AKA the right ear
+			//So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index]
+			this.#visualiserBars[index].height = (value + values[index]) / 2 * 2000;
+		});
+	}
 
 	get config() {
-		return this._config;
+		return this.#config;
 	}
 
 	set config(config) {
-		this._config.config = config;
-		this.recalculateVisualiserBarsGradient();
+		this.#config.config = config;
+		this.#visualiserBars.forEach(x => x.width = this.config.getConfigOption('slider_bar_width'));
 	}
 
-	constructor(maxStarCount = 200) {
-		this.maxStarCount = maxStarCount;
+	constructor(maxSnowflakeCount = 200) {
+		this.#maxSnowflakeCount = maxSnowflakeCount;
 		this.reset();
 		this.createCanvas();
-		this.recalculateVisualiserBarsGradient();
 
 		this.draw();
 	}
@@ -31,110 +47,102 @@ class ScreenManager {
 	draw = () => {
 		requestAnimationFrame(this.draw);
 
-		const now = this.getTimestamp();
-		const dt = (now - this.lastFrameDateTime) / 1000;
-		this.lastFrameDateTime = now;
+		const now = DateService.getNowTimestamp();
+		const dt = (now - this.#lastFrameDateTime) / 1000;
+		this.#lastFrameDateTime = now;
 
-		this.generateStars(dt);
+		//generate extra snowflakes if necessary
+		this.generateSnowflakes(dt);
 		this.render(dt);
 	}
 
-	getTimestamp = () => {
-		return window.performance && window.performance.now ? window.performance.now() : new Date().getTime();
-	}
-
-	generateStars = () => {
-		if(this.stars.length === this.maxStarCount) {
+	generateSnowflakes = () => {
+		//if already max amount of snowflakes, return
+		if(this.#snowflakes.length === this.#maxSnowflakeCount) {
 			return;
 		}
 
-		for(let i = this.stars.length; i < this.maxStarCount; i++) {
-			if(randomNumber(0, 1) > 0.9999) { //very low probability to generate a star
-				this.stars.push(new Star());
+		for(let i = this.#snowflakes.length; i < this.#maxSnowflakeCount; i++) {
+			if(randomNumber(0, 1) > 0.9999) { //very low probability to generate a snowflake
+				this.#snowflakes.push(new Snowflake());
 
-				//generate a max of 1 star per frame
+				//generate a max of 1 snowflake per update cycle
 				return;
 			}
 		}
-	}
-
-	clearScreen = () => {
-		this.context.clearRect(0, 0, this.dimensions.x, this.dimensions.y);
 	}
 
 	createCanvas = () => {
 		const canvas = document.createElement('canvas');
-		canvas.width = this.dimensions.x;
-		canvas.height = this.dimensions.y;
+		canvas.width = this.#dimensions.x;
+		canvas.height = this.#dimensions.y;
 
 		document.body.append(canvas);
-		this.context = canvas.getContext('2d');
+		this.#context = canvas.getContext('2d');
 	}
 
 	render = (dt) => {
+		//clear the screen entirely
 		this.clearScreen();
 
+		//update and draw snowflakes
+		this.drawSnowflakes(dt);
+
+		//update and draw synthesizer after snow
+		this.drawSynthesizer();
+	}
+
+	clearScreen = () => {
+		this.#context.clearRect(0, 0, this.#dimensions.x, this.#dimensions.y);
+	}
+
+	/**
+	 * @param dt float The delta time
+ 	 */
+	drawSnowflakes(dt) {
 		//draw snow
-		this.stars.forEach((s, index) => {
+		this.#snowflakes.forEach((s, index) => {
 			if(s.isSafeToDestroy()) {
-				this.stars.splice(index, 1); //remove the snowflake if out of bounds
+				this.#snowflakes.splice(index, 1); //remove the snowflake if out of bounds
 				return;
 			}
 
 			s.update(dt);
-			s.draw(this.context);
+			s.draw(this.#context);
 		});
-
-		//draw synthesizer after snow
-		this.drawSynthesizer();
 	}
 
 	drawSynthesizer() {
 		const barWidth = this.config.getConfigOption('slider_bar_width', 15);
 		const marginBetweenBars = this.config.getConfigOption('slider_bar_margin', 3);
-		const audioCount = this.audio.length;
-		const halfCount = audioCount / 2;
-		const centerY = this.dimensions.centerY;
-		const centerX = this.dimensions.centerX;
 
-		//calculate the starting position of the first bar
-		const startX = centerX - ((barWidth * halfCount) / 2) - (marginBetweenBars * (halfCount / 2));
-		this.context.fillStyle = this.visualiserBarsGradient;
+		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
+		const startX = this.#dimensions.centerX - ((barWidth * this.#visualiserBars.length) / 2) - (marginBetweenBars * (this.#visualiserBars.length / 2));
 
-		// this.context.fillStyle = this.config.getColorOption('cp_visualiser');
-		//only draw every other bar
+		// if(!this.#visualiserBarsGradient)
+		// 	this.recalculateVisualiserBarsGradient();
 
-		for (let i = 0; i < halfCount; i++) {
-			const height = centerY * this.audio[i] * 2;
-			//x = startX + (width of the bar * the number of bars) + (marginBetweenBars * the number of bars)
-			//y = center of screen - the height of the bar
-			//width = width of bar
-			//height = height of bar or 1 if 0
+		this.#context.fillStyle = this.calculateVisualiserGradient(startX);
 
-			document.getElementById('test').innerText = JSON.stringify(this.visualiserBarsGradient);
-			this.context.fillRect(startX + (barWidth * i) + (marginBetweenBars * i), centerY - height, barWidth, Math.max(height, 1));
-		}
+		this.#visualiserBars.forEach((bar, i) => {
+			bar.update();
+
+			const height = bar.height * this.config.getConfigOption('slider_height_amplifier', 1.5);
+			this.#context.fillRect(startX + (bar.width * i) + (marginBetweenBars * i), this.#dimensions.centerY - height, bar.width, height)
+		});
 	}
 
 	reset = () => {
-		this.dimensions = new Vec2(window.innerWidth, window.innerHeight);
+		this.#dimensions = new Vec2(window.innerWidth, window.innerHeight);
 	}
 
-	recalculateVisualiserBarsGradient = () => {
-		const barWidth = this.config.getConfigOption('slider_bar_width', 15);
-		const marginBetweenBars = this.config.getConfigOption('slider_bar_margin', 3);
-		const halfCount = this.audio.length / 2;
-
-		const startX = this.dimensions.centerX - ((barWidth * halfCount) / 2) - (marginBetweenBars * (halfCount / 2));
-
-		const gradient = this.context.createLinearGradient(startX, this.dimensions.centerY, this.dimensions.x - startX, this.dimensions.centerY);
-		gradient.addColorStop(0,  this.config.getColorOption('cp_gradient_bar_0'));
-		gradient.addColorStop(0.25,  this.config.getColorOption('cp_gradient_bar_1'));
+	calculateVisualiserGradient = (x) => {
+		const gradient = this.#context.createLinearGradient(x, this.#dimensions.centerY, this.#dimensions.x - x, this.#dimensions.centerY);
+		gradient.addColorStop(0, this.config.getColorOption('cp_gradient_bar_0'));
+		gradient.addColorStop(0.25, this.config.getColorOption('cp_gradient_bar_1'));
 		gradient.addColorStop(0.5,  this.config.getColorOption('cp_gradient_bar_2'));
 		gradient.addColorStop(0.75,  this.config.getColorOption('cp_gradient_bar_3'));
 
-		// document.getElementById('test2').innerHTML += JSON.stringify(this)  + '<br />';
-
-		this.visualiserBarsGradient = gradient;
+		return gradient;
 	}
 }

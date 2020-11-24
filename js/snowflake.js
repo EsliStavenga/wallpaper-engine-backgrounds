@@ -1,4 +1,4 @@
-class Star {
+class Snowflake {
 
 	position;
 	diameter;

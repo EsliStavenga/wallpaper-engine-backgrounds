@@ -8,10 +8,19 @@ class Vec2 {
 		this.y = y;
 	}
 
+
+	/**
+	 * Gets x over 2, or it's center
+	 * @return {number}
+	 */
 	get centerX() {
 		return this.x / 2;
 	}
 
+	/**
+	 * Gets y over 2, or it's center
+	 * @return {number}
+	 */
 	get centerY() {
 		return this.y / 2;
 	}
