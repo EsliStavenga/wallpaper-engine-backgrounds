@@ -12,16 +12,16 @@ class ScreenManager {
 	set audio(values) {
 		// values = ;
 
-		//only loop over left ear
+		//only loop over left ear channel
 		values.splice(0, values.length / 2).forEach((value, index) => {
 			if(!this.#visualiserBars[index]) {
 				this.#visualiserBars.push(new Bar(this.config.getConfigOption('slider_bar_width', 15), value));
 			}
 
-			//okay so this looks hacky, however it's not
-			//@line 16 we splice the values, which returns the first half off the array AKA the left channel
-			//That also changes the reference of values to only contain whatever is left after splicing AKA the right ear
-			//So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index]
+			/*  okay so this looks hacky, however it's not
+				@line 16 we splice the values, which returns the first half off the array AKA the left channel
+			    That also changes the reference of values to only contain whatever is left after splicing AKA the right ear
+			 	So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index] */
 			this.#visualiserBars[index].height = (value + values[index]) / 2 * 2000;
 		});
 	}
@@ -39,8 +39,15 @@ class ScreenManager {
 		this.#maxSnowflakeCount = maxSnowflakeCount;
 		this.reset();
 		this.createCanvas();
-
 		this.draw();
+
+		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
+		for(let i = 0, limit = randomNumber(75, maxSnowflakeCount / 2); i < limit; i++) {
+			const x = randomNumber(0, this.#dimensions.x), y =  randomNumber(0, this.#dimensions.y);
+
+			this.#snowflakes.push(new Snowflake(x, y));
+		}
+
 	}
 
 
@@ -50,6 +57,9 @@ class ScreenManager {
 		const now = DateService.getNowTimestamp();
 		const dt = (now - this.#lastFrameDateTime) / 1000;
 		this.#lastFrameDateTime = now;
+
+		//TODO on click
+		this.#snowflakes.push(new Snowflake(200, 100));
 
 		//generate extra snowflakes if necessary
 		this.generateSnowflakes(dt);
@@ -63,7 +73,7 @@ class ScreenManager {
 		}
 
 		for(let i = this.#snowflakes.length; i < this.#maxSnowflakeCount; i++) {
-			if(randomNumber(0, 1) > 0.9999) { //very low probability to generate a snowflake
+			if(randomNumber(0, 1) > 0.9996) { //very low probability to generate a snowflake
 				this.#snowflakes.push(new Snowflake());
 
 				//generate a max of 1 snowflake per update cycle

@@ -7,14 +7,19 @@ class Snowflake {
 	targetY;
 	targetGravity;
 
-	constructor() {
+	constructor(x = undefined, y = undefined) {
 		this.diameter = randomNumber(1, 3.5);
 		this.gravity = randomNumber(-25, 25);
 		this.targetGravity = this.gravity;
 		this.velocity = randomNumber(35, 67);
 
 		const halfDiameter = this.diameter / 2;
-		this.position = new Vec2(-halfDiameter, randomNumber(halfDiameter , screen.height - halfDiameter));
+
+		if(!x || !y) {
+			this.position = new Vec2(-halfDiameter, randomNumber(halfDiameter, screen.height - halfDiameter));
+		} else {
+			this.position = new Vec2(x, y);
+		}
 
 		this.targetY = (this.gravity > 0 ? randomNumber(this.position.y, this.position.y + 100) : randomNumber(this.position.y - 100, this.position.y));
 	}

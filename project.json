@@ -83,7 +83,7 @@
 				"order" : 106,
 				"text" : "The fourth gradient for the visualiser bars",
 				"type" : "color",
-				"value" : "1 0.64705882352 0"
+				"value" : "0.21960784313 0.61176470588 0.14117647058"
 			}
 		},
 		"supportsaudioprocessing" : true
