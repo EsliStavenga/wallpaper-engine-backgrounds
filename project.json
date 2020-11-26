@@ -4,9 +4,51 @@
 	{
 		"properties" : 
 		{
+			"clientid" : 
+			{
+				"order" : 109,
+				"text" : "Client ID",
+				"type" : "textinput",
+				"value" : ""
+			},
+			"clientsecret" : 
+			{
+				"order" : 110,
+				"text" : "Client Secret",
+				"type" : "textinput",
+				"value" : ""
+			},
+			"cp_gradient_bar_0" : 
+			{
+				"order" : 105,
+				"text" : "The first gradient for the visualiser bars",
+				"type" : "color",
+				"value" : "0.96 0.01 0.96"
+			},
+			"cp_gradient_bar_1" : 
+			{
+				"order" : 106,
+				"text" : "The second gradient for the visualiser bars",
+				"type" : "color",
+				"value" : "0 1 0.86666666666"
+			},
+			"cp_gradient_bar_2" : 
+			{
+				"order" : 107,
+				"text" : "The third gradient for the visualiser bars",
+				"type" : "color",
+				"value" : "0.02745098039 0.39607843137 0.89019607843"
+			},
+			"cp_gradient_bar_3" : 
+			{
+				"order" : 108,
+				"text" : "The fourth gradient for the visualiser bars",
+				"type" : "color",
+				"value" : "0.21960784313 0.61176470588 0.14117647058"
+			},
 			"cp_visualiser" : 
 			{
-				"order" : 98,
+				"order" : 100,
 				"text" : "Visualiser foreground",
 				"type" : "color",
 				"value" : "1 0 0"
@@ -18,77 +60,63 @@
 				"type" : "color",
 				"value" : "1 0 0"
 			},
-			"slider_bar_timeout" :
+			"slider_bar_margin" : 
+			{
+				"max" : 10,
+				"min" : 0,
+				"order" : 104,
+				"step" : 0.5,
+				"text" : "Margin between bars",
+				"type" : "slider",
+				"value" : 3
+			},
+			"slider_bar_timeout" : 
 			{
 				"max" : 1,
 				"min" : 0,
-				"step": 0.01,
-				"order" : 99,
+				"order" : 101,
+				"step" : 0.01,
 				"text" : "The timeout before a bar starts dropping again",
 				"type" : "slider",
-				"value" : 0.05
-			},
-			"slider_height_amplifier" :
-			{
-				"max" : 2,
-				"min" : 1,
-				"step": 0.1,
-				"order" : 100,
-				"text" : "The amplifier for the visualiser bars' height",
-				"type" : "slider",
-				"value" : 1
+				"value" : 0.050000000000000003
 			},
 			"slider_bar_width" : 
 			{
 				"max" : 25,
 				"min" : 1,
-				"order" : 101,
+				"order" : 103,
 				"text" : "Width of a single bar",
 				"type" : "slider",
 				"value" : 15
 			},
-			"slider_bar_margin" :
+			"slider_height_amplifier" : 
 			{
-				"max" : 10,
-				"min" : 0,
-				"step": 0.5,
+				"max" : 2,
+				"min" : 1,
 				"order" : 102,
-				"text" : "Margin between bars",
+				"step" : 0.10000000000000001,
+				"text" : "The amplifier for the visualiser bars' height",
 				"type" : "slider",
-				"value" : 3
+				"value" : 1
 			},
-			"cp_gradient_bar_0" :
+			"txt_spotify_access_token" : 
 			{
-				"order" : 103,
-				"text" : "The first gradient for the visualiser bars",
-				"type" : "color",
-				"value" : "0.96 0.01 0.96"
+				"order" : 111,
+				"text" : "Spotify access token",
+				"type" : "textinput",
+				"value" : ""
 			},
-			"cp_gradient_bar_1" :
+			"txt_spotify_refresh_token" : 
 			{
-				"order" : 104,
-				"text" : "The second gradient for the visualiser bars",
-				"type" : "color",
-				"value" : "0 1 0.86666666666"
-			},
-			"cp_gradient_bar_2" :
-			{
-				"order" : 105,
-				"text" : "The third gradient for the visualiser bars",
-				"type" : "color",
-				"value" : "0.02745098039 0.39607843137 0.89019607843"
-			},
-			"cp_gradient_bar_3" :
-			{
-				"order" : 106,
-				"text" : "The fourth gradient for the visualiser bars",
-				"type" : "color",
-				"value" : "0.21960784313 0.61176470588 0.14117647058"
+				"order" : 112,
+				"text" : "Spotify refresh token",
+				"type" : "textinput",
+				"value" : ""
 			}
 		},
 		"supportsaudioprocessing" : true
 	},
 	"title" : "Visualiser",
 	"type" : "web",
-	"version" : "0.1.1"
+	"version" : 0
 }

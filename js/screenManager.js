@@ -8,6 +8,7 @@ class ScreenManager {
 	#context;
 	#lastFrameDateTime;
 	#dimensions;
+	#spotify;
 
 	set audio(values) {
 		// values = ;
@@ -37,9 +38,12 @@ class ScreenManager {
 
 	constructor(maxSnowflakeCount = 200) {
 		this.#maxSnowflakeCount = maxSnowflakeCount;
+		this.#spotify = new SpotifyConnectorService();
+
 		this.reset();
 		this.createCanvas();
 		this.draw();
+		this.drawSpotify();
 
 		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
 		for(let i = 0, limit = randomNumber(75, maxSnowflakeCount / 2); i < limit; i++) {
@@ -59,7 +63,7 @@ class ScreenManager {
 		this.#lastFrameDateTime = now;
 
 		//TODO on click
-		this.#snowflakes.push(new Snowflake(200, 100));
+		// this.#snowflakes.push(new Snowflake(200, 100));
 
 		//generate extra snowflakes if necessary
 		this.generateSnowflakes(dt);
@@ -73,7 +77,7 @@ class ScreenManager {
 		}
 
 		for(let i = this.#snowflakes.length; i < this.#maxSnowflakeCount; i++) {
-			if(randomNumber(0, 1) > 0.9996) { //very low probability to generate a snowflake
+			if(randomNumber(0, 1) > 0.9999) { //very low probability to generate a snowflake
 				this.#snowflakes.push(new Snowflake());
 
 				//generate a max of 1 snowflake per update cycle
@@ -120,6 +124,54 @@ class ScreenManager {
 			s.update(dt);
 			s.draw(this.#context);
 		});
+	}
+
+	drawSpotify() {
+
+		// if(!this.#spotify.isReady) {
+		//
+		// 	setTimeout(() => _this.drawSpotify, 1000);
+			//
+			// this.drawSpotify();
+			// return;
+		// }
+
+		// document.getElementById('test').innerText = (new Date()).getTime();
+
+		this.#spotify.getCurrentlyPlaying().then(result => {
+			// this.#accessToken = result.access_token;
+			// setTimeout(this.authorise, result.expires_in);
+
+			//This is working, however draw will clear the screen every frame
+			//TODO sync spotify asynchronously once per second, should be fine according to my quick goooglinh
+			//TODO assume the progression of the song
+			//TODO render useful data
+
+			document.getElementById('test').innerText += JSON.stringify(result);
+
+			this.#context.font = '50px Arial Black';
+			this.#context.fillStyle = 'rgb(255, 255, 255)';
+
+			// this.#context.fontSize = '50px';
+			this.#context.fillText("test", this.#dimensions.centerX, this.#dimensions.centerY + 50);
+
+			this.#context.font = '30px Arial Black';
+			this.#context.fillText(JSON.stringify(result), this.#dimensions.centerX, this.#dimensions.centerY + 90);
+
+		})
+			.catch(_ => {
+				//will also end up in here on json decode errors => if nothing is playing, ty spotify
+
+				// document.getElementById('test').innerText += 'error: ' + JSON.stringify(error);
+				this.#context.font = '50px Arial Black';
+				// this.#context.fontSize = '50px';
+				this.#context.fillText('Nothing is playing', this.#dimensions.centerX, this.#dimensions.centerY + 50);
+			})
+			// .finally(() => {
+			// 	setTimeout(() => this.drawSpotify, 1000);
+			// });
+
+
 	}
 
 	drawSynthesizer() {
