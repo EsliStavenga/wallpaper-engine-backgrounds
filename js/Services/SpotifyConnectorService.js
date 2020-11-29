@@ -120,10 +120,6 @@ class SpotifyConnectorService {
 		const params = new URLSearchParams();
 
 		for(const key in data) {
-			if(!data.hasOwnProperty(key)) {
-				continue;
-			}
-
 			params.append(key, data[key]);
 		}
 

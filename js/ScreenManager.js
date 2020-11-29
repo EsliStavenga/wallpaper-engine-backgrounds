@@ -37,11 +37,10 @@ class ScreenManager {
 	constructor(maxSnowflakeCount = 200) {
 		this.#maxSnowflakeCount = maxSnowflakeCount;
 		this.#spotify = new SpotifyConnectorService();
+		this.#dimensions = new Vec2(window.innerWidth, window.innerHeight);
 
-		this.reset();
 		this.createCanvas();
-		this.draw();
-		// this.drawSpotify();
+		this.handleNextFrame();
 
 		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
 		for(let i = 0, limit = randomNumber(75, maxSnowflakeCount / 2); i < limit; i++) {
@@ -53,8 +52,8 @@ class ScreenManager {
 	}
 
 
-	draw = () => {
-		requestAnimationFrame(this.draw);
+	handleNextFrame = () => {
+		requestAnimationFrame(this.handleNextFrame);
 
 		const now = DateService.getNowTimestamp();
 		const dt = (now - this.#lastFrameDateTime) / 1000;
@@ -65,7 +64,8 @@ class ScreenManager {
 
 		//generate extra snowflakes if necessary
 		this.generateSnowflakes(dt);
-		this.render(dt);
+		this.update(dt);
+		this.render();
 	}
 
 	generateSnowflakes = () => {
@@ -93,12 +93,24 @@ class ScreenManager {
 		this.#context = canvas.getContext('2d');
 	}
 
-	render = (dt) => {
+	update = (dt) => {
+		this.#snowflakes.forEach((s, index) => {
+			if(s.isSafeToDestroy()) {
+				this.#snowflakes.splice(index, 1); //remove the snowflake if out of bounds
+				return;
+			}
+
+			s.update(dt);
+		});
+		this.#visualiserBars.forEach(b => b.update());
+	}
+
+	render = () => {
 		//clear the screen entirely
 		this.clearScreen();
 
 		//update and draw snowflakes
-		this.drawSnowflakes(dt);
+		this.drawSnowflakes();
 
 		//update and draw synthesizer after snow
 		this.drawSynthesizer();
@@ -108,7 +120,10 @@ class ScreenManager {
 	clearScreen = () => {
 		//only clear everything near snowflake
 		this.#snowflakes.forEach(s => {
-			this.#context.clearRect(s.left - s.diameter, s.top - s.diameter, s.diameter * 3, s.diameter * 3)
+			//clear a slightly bigger radius than the actual snowflake
+			//because of its angle otherwise it will sometimes leave a trail
+			const d= Math.ceil(s.diameter * 4);
+			this.#context.clearRect(s.left - s.diameter * 2, s.top - s.diameter * 2, d, d)
 		});
 
 		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
@@ -125,20 +140,14 @@ class ScreenManager {
 	/**
 	 * @param dt float The delta time
  	 */
-	drawSnowflakes(dt) {
+	drawSnowflakes = () => {
 		//draw snow
 		this.#snowflakes.forEach((s, index) => {
-			if(s.isSafeToDestroy()) {
-				this.#snowflakes.splice(index, 1); //remove the snowflake if out of bounds
-				return;
-			}
-
-			s.update(dt);
 			s.draw(this.#context);
 		});
 	}
 
-	drawSpotify() {
+	drawSpotify = () => {
 
 		if(this.#visualiserBars.length === 0) {
 			return;
@@ -209,15 +218,15 @@ class ScreenManager {
 
 				this.#context.fillText('Nothing is playing', this.#dimensions.centerX, this.#dimensions.centerY + 90);
 
-			})*/
-			// .finally(() => {
-			// 	setTimeout(() => this.drawSpotify, 1000);
-			// });
+			})
+			 .finally(() => {
+			 	setTimeout(() => this.drawSpotify, 1000);
+			 });*/
 
 
 	}
 
-	drawSynthesizer() {
+	drawSynthesizer = () => {
 		const x = this.getStartingXOfVisualiser();
 		const m = this.#config.getConfigOption('slider_bar_margin');
 
@@ -227,15 +236,10 @@ class ScreenManager {
 		this.#context.fillStyle = this.calculateVisualiserGradient(x);
 
 		this.#visualiserBars.forEach((bar, i) => {
-			bar.update();
 			const height = bar.height * this.#config.getConfigOption('slider_height_amplifier');
 
 			this.#context.fillRect(x + (bar.width + m) * i, this.#dimensions.centerY - height, bar.width, height)
 		});
-	}
-
-	reset = () => {
-		this.#dimensions = new Vec2(window.innerWidth, window.innerHeight);
 	}
 
 	calculateVisualiserGradient = (x) => {
@@ -248,7 +252,7 @@ class ScreenManager {
 		return gradient;
 	}
 
-	getVisualiserWidth() {
+	getVisualiserWidth = () => {
 		const barWidth = this.#config.getConfigOption('slider_bar_width');
 		const marginBetweenBars = this.#config.getConfigOption('slider_bar_margin');
 
@@ -257,7 +261,7 @@ class ScreenManager {
 
 	}
 
-	getStartingXOfVisualiser() {
+	getStartingXOfVisualiser = () => {
 		return this.#dimensions.centerX - (this.getVisualiserWidth() / 2);
 	}
 }
