@@ -10,13 +10,15 @@ class ScreenManager {
 	#dimensions;
 	#spotify;
 
+	#currentAlbumCover = undefined;
+
 	set audio(values) {
 		// values = ;
 
 		//only loop over left ear channel
 		values.splice(0, values.length / 2).forEach((value, index) => {
 			if(!this.#visualiserBars[index]) {
-				this.#visualiserBars.push(new Bar(this.config.getConfigOption('slider_bar_width', 15), value));
+				this.#visualiserBars.push(new Bar(this.#config.getConfigOption('slider_bar_width', 15), value));
 			}
 
 			/*  okay so this looks hacky, however it's not
@@ -27,13 +29,9 @@ class ScreenManager {
 		});
 	}
 
-	get config() {
-		return this.#config;
-	}
-
 	set config(config) {
 		this.#config.config = config;
-		this.#visualiserBars.forEach(x => x.width = this.config.getConfigOption('slider_bar_width'));
+		this.#visualiserBars.forEach(x => x.width = this.#config.getConfigOption('slider_bar_width'));
 	}
 
 	constructor(maxSnowflakeCount = 200) {
@@ -43,7 +41,7 @@ class ScreenManager {
 		this.reset();
 		this.createCanvas();
 		this.draw();
-		this.drawSpotify();
+		// this.drawSpotify();
 
 		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
 		for(let i = 0, limit = randomNumber(75, maxSnowflakeCount / 2); i < limit; i++) {
@@ -104,10 +102,24 @@ class ScreenManager {
 
 		//update and draw synthesizer after snow
 		this.drawSynthesizer();
+		this.drawSpotify();
 	}
 
 	clearScreen = () => {
-		this.#context.clearRect(0, 0, this.#dimensions.x, this.#dimensions.y);
+		//only clear everything near snowflake
+		this.#snowflakes.forEach(s => {
+			this.#context.clearRect(s.left - s.diameter, s.top - s.diameter, s.diameter * 3, s.diameter * 3)
+		});
+
+		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
+		const startX = this.getStartingXOfVisualiser();
+
+		//only clear visualiser
+		this.#context.clearRect(startX, 0, this.getVisualiserWidth(), this.#dimensions.centerY);
+
+		//clear spotify dat
+		this.#context.clearRect(startX, this.#dimensions.centerY + 10, this.getVisualiserWidth(), 100);
+
 	}
 
 	/**
@@ -128,6 +140,10 @@ class ScreenManager {
 
 	drawSpotify() {
 
+		if(this.#visualiserBars.length === 0) {
+			return;
+		}
+
 		// if(!this.#spotify.isReady) {
 		//
 		// 	setTimeout(() => _this.drawSpotify, 1000);
@@ -138,7 +154,9 @@ class ScreenManager {
 
 		// document.getElementById('test').innerText = (new Date()).getTime();
 
-		this.#spotify.getCurrentlyPlaying().then(result => {
+		// this.#spotify.getCurrentlyPlaying().then(result => {
+		// 	console.log(result.item.album.images[1].url);
+
 			// this.#accessToken = result.access_token;
 			// setTimeout(this.authorise, result.expires_in);
 
@@ -147,26 +165,51 @@ class ScreenManager {
 			//TODO assume the progression of the song
 			//TODO render useful data
 
-			document.getElementById('test').innerText += JSON.stringify(result);
+			//draw album cover
+			// const albumCoverSrc = result.item.album.images[1].url;
+			if(this.#currentAlbumCover) { // || this.#currentAlbumCover.src !== albumCoverSrc) {
+				this.#context.drawImage(this.#currentAlbumCover, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 10, 100, 100);
+			} else {
+				const image = new Image(100, 100);
+				image.addEventListener('load', () => {
+					// dump("Draw me :)");
+					this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 10, 100, 100);
+				}, false);
+				// image.src = albumCoverSrc;
+				image.src = 'img/404.png';
+				// image.src = 'https://i.scdn.co/image/ab67616d00001e02efe55e4449fe3cc1b1c9fd03';
+
+				//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
+				//Also saves a buttload of network traffic
+				this.#currentAlbumCover = image;
+			}
 
 			this.#context.font = '50px Arial Black';
 			this.#context.fillStyle = 'rgb(255, 255, 255)';
 
+
 			// this.#context.fontSize = '50px';
-			this.#context.fillText("test", this.#dimensions.centerX, this.#dimensions.centerY + 50);
+			this.#context.fillText("Constellation of Tears", this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 50);
 
 			this.#context.font = '30px Arial Black';
-			this.#context.fillText(JSON.stringify(result), this.#dimensions.centerX, this.#dimensions.centerY + 90);
+			this.#context.fillText("Cain's Offering", this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 90);
 
-		})
+		/*})
 			.catch(_ => {
 				//will also end up in here on json decode errors => if nothing is playing, ty spotify
 
+				// console.trace();
+				// console.error(JSON.stringify(_));
+
+				dump("Errrrrr")
+
 				// document.getElementById('test').innerText += 'error: ' + JSON.stringify(error);
-				this.#context.font = '50px Arial Black';
-				// this.#context.fontSize = '50px';
-				this.#context.fillText('Nothing is playing', this.#dimensions.centerX, this.#dimensions.centerY + 50);
-			})
+				this.#context.font = '30px Arial Black';
+				this.#context.fillStyle = 'rgb(255, 255, 255)';
+
+				this.#context.fillText('Nothing is playing', this.#dimensions.centerX, this.#dimensions.centerY + 90);
+
+			})*/
 			// .finally(() => {
 			// 	setTimeout(() => this.drawSpotify, 1000);
 			// });
@@ -175,22 +218,19 @@ class ScreenManager {
 	}
 
 	drawSynthesizer() {
-		const barWidth = this.config.getConfigOption('slider_bar_width', 15);
-		const marginBetweenBars = this.config.getConfigOption('slider_bar_margin', 3);
-
-		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
-		const startX = this.#dimensions.centerX - ((barWidth * this.#visualiserBars.length) / 2) - (marginBetweenBars * (this.#visualiserBars.length / 2));
+		const x = this.getStartingXOfVisualiser();
+		const m = this.#config.getConfigOption('slider_bar_margin');
 
 		// if(!this.#visualiserBarsGradient)
 		// 	this.recalculateVisualiserBarsGradient();
 
-		this.#context.fillStyle = this.calculateVisualiserGradient(startX);
+		this.#context.fillStyle = this.calculateVisualiserGradient(x);
 
 		this.#visualiserBars.forEach((bar, i) => {
 			bar.update();
+			const height = bar.height * this.#config.getConfigOption('slider_height_amplifier');
 
-			const height = bar.height * this.config.getConfigOption('slider_height_amplifier', 1.5);
-			this.#context.fillRect(startX + (bar.width * i) + (marginBetweenBars * i), this.#dimensions.centerY - height, bar.width, height)
+			this.#context.fillRect(x + (bar.width + m) * i, this.#dimensions.centerY - height, bar.width, height)
 		});
 	}
 
@@ -200,11 +240,24 @@ class ScreenManager {
 
 	calculateVisualiserGradient = (x) => {
 		const gradient = this.#context.createLinearGradient(x, this.#dimensions.centerY, this.#dimensions.x - x, this.#dimensions.centerY);
-		gradient.addColorStop(0, this.config.getColorOption('cp_gradient_bar_0'));
-		gradient.addColorStop(0.25, this.config.getColorOption('cp_gradient_bar_1'));
-		gradient.addColorStop(0.5,  this.config.getColorOption('cp_gradient_bar_2'));
-		gradient.addColorStop(0.75,  this.config.getColorOption('cp_gradient_bar_3'));
+		gradient.addColorStop(0, this.#config.getColorOption('cp_gradient_bar_0'));
+		gradient.addColorStop(0.25, this.#config.getColorOption('cp_gradient_bar_1'));
+		gradient.addColorStop(0.5,  this.#config.getColorOption('cp_gradient_bar_2'));
+		gradient.addColorStop(0.75,  this.#config.getColorOption('cp_gradient_bar_3'));
 
 		return gradient;
+	}
+
+	getVisualiserWidth() {
+		const barWidth = this.#config.getConfigOption('slider_bar_width');
+		const marginBetweenBars = this.#config.getConfigOption('slider_bar_margin');
+
+		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
+		return ((barWidth + marginBetweenBars) * this.#visualiserBars.length);
+
+	}
+
+	getStartingXOfVisualiser() {
+		return this.#dimensions.centerX - (this.getVisualiserWidth() / 2);
 	}
 }

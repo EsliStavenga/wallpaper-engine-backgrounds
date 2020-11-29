@@ -1,3 +1,8 @@
+/**
+ * The access and refresh token
+ * Setters and getters are used so localstorage is set on change
+ * This will ensure the refreshtoken is kept in between pc restarts
+ */
 class AccessToken {
 
 	#accessToken = localStorage.getItem('access-token');
@@ -7,17 +12,22 @@ class AccessToken {
 
 	set accessToken(val) {
 		this.#accessToken = val;
-		localStorage.setItem('access-token', val)
+
+		if(val) {
+			localStorage.setItem('access-token', val)
+		}
 	}
 
-	//FIXME uncertain this works
 	get accessToken() {
 		return this.#accessToken || Config.getInstance().getConfigOption('txt_spotify_access_token');
 	}
 
 	set refreshToken(val) {
 		this.#refreshToken = val;
-		localStorage.setItem('refresh-token', val);
+
+		if(val) {
+			localStorage.setItem('refresh-token', val);
+		}
 	}
 
 	get refreshToken() {

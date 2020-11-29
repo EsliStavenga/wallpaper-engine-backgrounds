@@ -8,19 +8,19 @@
 <body>
 <div id="test"></div>
 
-<script src="js/config.js"></script>
+<script src="js/VisualiserEvent.js"></script>
+<script src="js/Config.js"></script>
 <script src="js/AccessToken.js"></script>
 <script src="js/Services/DateService.js"></script>
 <script src="js/Services/SpotifyConnectorService.js"></script>
 <script src="js/Vec2.js"></script>
 <script src="js/Bar.js"></script>
-<script src="js/snowflake.js"></script>
-<script src="js/screenManager.js"></script>
+<script src="js/Snowflake.js"></script>
+<script src="js/ScreenManager.js"></script>
 
 <script>
 	const screenManager = new ScreenManager();
 	let lastAudioDateTime = DateService.getNowTimestamp();
-
 
 	function audioListener(audio) {
 		const now = DateService.getNowTimestamp();
@@ -37,7 +37,7 @@
 	}
 
 	function applyProperties(properties) {
-		screenManager.config = properties;
+		Config.getInstance().config = properties;
 	}
 
 	//TODO on start generate random positions
