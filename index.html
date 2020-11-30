@@ -36,6 +36,10 @@
 		screenManager.audio = (audio);
 	}
 
+	function dump(val) {
+		document.getElementById('test').innerText += JSON.stringify(val) + '\n';
+	}
+
 	function applyProperties(properties) {
 		Config.getInstance().config = properties;
 	}

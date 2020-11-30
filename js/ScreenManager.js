@@ -9,6 +9,7 @@ class ScreenManager {
 	#lastFrameDateTime;
 	#dimensions;
 	#spotify;
+	#spotifyNowPlayingData;
 
 	#currentAlbumCover = undefined;
 
@@ -41,6 +42,7 @@ class ScreenManager {
 
 		this.createCanvas();
 		this.handleNextFrame();
+		this.requestSpotifyData();
 
 		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
 		for(let i = 0, limit = randomNumber(75, maxSnowflakeCount / 2); i < limit; i++) {
@@ -122,8 +124,8 @@ class ScreenManager {
 		this.#snowflakes.forEach(s => {
 			//clear a slightly bigger radius than the actual snowflake
 			//because of its angle otherwise it will sometimes leave a trail
-			const d= Math.ceil(s.diameter * 4);
-			this.#context.clearRect(s.left - s.diameter * 2, s.top - s.diameter * 2, d, d)
+			const d= Math.ceil(s.diameter * 6);
+			this.#context.clearRect(s.left - s.diameter * 3, s.top - s.diameter * 3, d, d)
 		});
 
 		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
@@ -137,22 +139,65 @@ class ScreenManager {
 
 	}
 
-	/**
-	 * @param dt float The delta time
- 	 */
 	drawSnowflakes = () => {
 		//draw snow
-		this.#snowflakes.forEach((s, index) => {
+		this.#snowflakes.forEach((s) => {
 			s.draw(this.#context);
 		});
 	}
 
-	drawSpotify = () => {
+	requestSpotifyData = () => {
 
-		if(this.#visualiserBars.length === 0) {
+		this.#spotify.authorise().then(() => {
+			this.#spotify.getCurrentlyPlaying().then(result => {
+				this.#spotifyNowPlayingData = result
+			})
+			.catch(_ => {
+				this.#spotifyNowPlayingData = undefined
+			});
+		})
+
+		setTimeout(this.requestSpotifyData, 1000);
+	}
+
+	drawSpotify = () => {
+		if(!this.isInitilised()) {
 			return;
 		}
 
+		if(!this.#spotifyNowPlayingData) {
+
+			if(this.#currentAlbumCover && this.#currentAlbumCover.hasAttribute('is-local-file') && this.#currentAlbumCover.getAttribute('is-local-file') === '1') {
+				this.#context.drawImage(this.#currentAlbumCover, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
+			} else {
+				const image = new Image(100, 100);
+				image.addEventListener('load', () => {
+					// dump("Draw me :)");
+					this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
+				}, false);
+				image.setAttribute('is-local-file', '1');
+				// image.src = albumCoverSrc;
+				image.src = 'img/404.png'; //this.#spotifyNowPlayingData.album.images[1].url;
+				//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
+				//Also saves a buttload of network traffic
+
+				this.#currentAlbumCover = image;
+			}
+			this.#context.font = '50px Arial Black';
+
+			this.#context.fillStyle = 'rgb(255, 255, 255)';
+			// - ${this.#spotifyNowPlayingData.popularity}/100
+			this.#context.fillText(`Nothing is playing`, this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 70);
+
+
+			// + ` - duration: ${this.#spotifyNowPlayingData.duration_ms}ms`
+			this.#context.font = '30px Arial Black';
+
+			this.#context.fillText('Kinda quiet :(', this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 110);
+			return;
+
+
+		}
 		// if(!this.#spotify.isReady) {
 		//
 		// 	setTimeout(() => _this.drawSpotify, 1000);
@@ -175,17 +220,24 @@ class ScreenManager {
 			//TODO render useful data
 
 			//draw album cover
-			// const albumCoverSrc = result.item.album.images[1].url;
-			if(this.#currentAlbumCover) { // || this.#currentAlbumCover.src !== albumCoverSrc) {
-				this.#context.drawImage(this.#currentAlbumCover, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 10, 100, 100);
+
+			const item = this.#spotifyNowPlayingData.item;
+			const albumCoverSrc = item.album.images[1].url;
+
+
+
+			//only redraw the image if the source has changed
+			if(this.#currentAlbumCover && this.#currentAlbumCover.src === albumCoverSrc) { // || this.#currentAlbumCover.src !== albumCoverSrc) {
+				this.#context.drawImage(this.#currentAlbumCover, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
 			} else {
 				const image = new Image(100, 100);
 				image.addEventListener('load', () => {
 					// dump("Draw me :)");
-					this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 10, 100, 100);
+					this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
 				}, false);
+				image.setAttribute('is-local-file', '0');
 				// image.src = albumCoverSrc;
-				image.src = 'img/404.png';
+				image.src = albumCoverSrc;
 				// image.src = 'https://i.scdn.co/image/ab67616d00001e02efe55e4449fe3cc1b1c9fd03';
 
 				//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
@@ -197,11 +249,12 @@ class ScreenManager {
 			this.#context.fillStyle = 'rgb(255, 255, 255)';
 
 
-			// this.#context.fontSize = '50px';
-			this.#context.fillText("Constellation of Tears", this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 50);
+			// - ${this.#spotifyNowPlayingData.popularity}/100
+			this.#context.fillText(`${item.name}`, this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 70);
 
+			// + ` - duration: ${this.#spotifyNowPlayingData.duration_ms}ms`
 			this.#context.font = '30px Arial Black';
-			this.#context.fillText("Cain's Offering", this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 90);
+			this.#context.fillText(item.artists.map(x => x.name).join(', '), this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 110);
 
 		/*})
 			.catch(_ => {
@@ -240,6 +293,9 @@ class ScreenManager {
 
 			this.#context.fillRect(x + (bar.width + m) * i, this.#dimensions.centerY - height, bar.width, height)
 		});
+
+		const width = (this.#spotifyNowPlayingData ? (this.#spotifyNowPlayingData.progress_ms / this.#spotifyNowPlayingData.item.duration_ms) * this.getVisualiserWidth() : 0);
+		this.#context.fillRect(x, this.#dimensions.centerY + 1 , clamp(width, 0, this.getVisualiserWidth()), 5);
 	}
 
 	calculateVisualiserGradient = (x) => {
@@ -257,11 +313,15 @@ class ScreenManager {
 		const marginBetweenBars = this.#config.getConfigOption('slider_bar_margin');
 
 		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
-		return ((barWidth + marginBetweenBars) * this.#visualiserBars.length);
+		return ((barWidth + marginBetweenBars) * this.#visualiserBars.length) - (marginBetweenBars - 1);
 
 	}
 
 	getStartingXOfVisualiser = () => {
 		return this.#dimensions.centerX - (this.getVisualiserWidth() / 2);
+	}
+
+	isInitilised() {
+		return this.#visualiserBars.length > 0;
 	}
 }
