@@ -72,13 +72,13 @@
 			},
 			"slider_bar_timeout" : 
 			{
-				"max" : 1,
+				"max" : 10,
 				"min" : 0,
 				"order" : 101,
-				"step" : 0.01,
-				"text" : "The timeout before a bar starts dropping again",
+				"step" : 0.5,
+				"text" : "The timeout before a bar starts dropping again x10",
 				"type" : "slider",
-				"value" : 0.050000000000000003
+				"value" : 0.5
 			},
 			"slider_bar_width" : 
 			{

@@ -8,10 +8,18 @@ class ScreenManager {
 	#context;
 	#lastFrameDateTime;
 	#dimensions;
+
+	//spotify related
+	//TODO split up
 	#spotify;
 	#spotifyNowPlayingData;
+	#spotifyProgress = 0;
 
 	#currentAlbumCover = undefined;
+	#isPausedImage;
+	#songTitleFontSize = 50;
+	#songSubtitleFontSize = 30;
+	#songDataTopMargin = 70;
 
 	set audio(values) {
 		// values = ;
@@ -39,6 +47,8 @@ class ScreenManager {
 		this.#maxSnowflakeCount = maxSnowflakeCount;
 		this.#spotify = new SpotifyConnectorService();
 		this.#dimensions = new Vec2(window.innerWidth, window.innerHeight);
+
+		this.#isPausedImage = this.createAlbumCoverImage('img/paused.png', 1);
 
 		this.createCanvas();
 		this.handleNextFrame();
@@ -104,7 +114,12 @@ class ScreenManager {
 
 			s.update(dt);
 		});
+
 		this.#visualiserBars.forEach(b => b.update());
+
+		if(this.#spotifyNowPlayingData && this.#spotifyNowPlayingData.is_playing) {
+			this.#spotifyProgress += (this.getVisualiserWidth() / this.#spotifyNowPlayingData.item.duration_ms * 1000 * dt);
+		}
 	}
 
 	render = () => {
@@ -131,11 +146,11 @@ class ScreenManager {
 		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
 		const startX = this.getStartingXOfVisualiser();
 
-		//only clear visualiser
-		this.#context.clearRect(startX, 0, this.getVisualiserWidth(), this.#dimensions.centerY);
+		//only clear visualiser and progress bar
+		this.#context.clearRect(startX, 0, this.getVisualiserWidth(), this.#dimensions.centerY + 30);
 
 		//clear spotify dat
-		this.#context.clearRect(startX, this.#dimensions.centerY + 10, this.getVisualiserWidth(), 100);
+		this.#context.clearRect(startX, this.#dimensions.centerY, this.getVisualiserWidth(), this.#songDataTopMargin + this.#songSubtitleFontSize + this.#songTitleFontSize);
 
 	}
 
@@ -151,9 +166,11 @@ class ScreenManager {
 		this.#spotify.authorise().then(() => {
 			this.#spotify.getCurrentlyPlaying().then(result => {
 				this.#spotifyNowPlayingData = result
+				this.#spotifyProgress = (this.#spotifyNowPlayingData.progress_ms / this.#spotifyNowPlayingData.item.duration_ms) * this.getVisualiserWidth()
 			})
 			.catch(_ => {
 				this.#spotifyNowPlayingData = undefined
+				this.#spotifyProgress = 0;
 			});
 		})
 
@@ -166,117 +183,10 @@ class ScreenManager {
 		}
 
 		if(!this.#spotifyNowPlayingData) {
-
-			if(this.#currentAlbumCover && this.#currentAlbumCover.hasAttribute('is-local-file') && this.#currentAlbumCover.getAttribute('is-local-file') === '1') {
-				this.#context.drawImage(this.#currentAlbumCover, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
-			} else {
-				const image = new Image(100, 100);
-				image.addEventListener('load', () => {
-					// dump("Draw me :)");
-					this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
-				}, false);
-				image.setAttribute('is-local-file', '1');
-				// image.src = albumCoverSrc;
-				image.src = 'img/404.png'; //this.#spotifyNowPlayingData.album.images[1].url;
-				//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
-				//Also saves a buttload of network traffic
-
-				this.#currentAlbumCover = image;
-			}
-			this.#context.font = '50px Arial Black';
-
-			this.#context.fillStyle = 'rgb(255, 255, 255)';
-			// - ${this.#spotifyNowPlayingData.popularity}/100
-			this.#context.fillText(`Nothing is playing`, this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 70);
-
-
-			// + ` - duration: ${this.#spotifyNowPlayingData.duration_ms}ms`
-			this.#context.font = '30px Arial Black';
-
-			this.#context.fillText('Kinda quiet :(', this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 110);
-			return;
-
-
+			this.drawNothingPlaying();
+		} else {
+			this.drawPlayingSongData();
 		}
-		// if(!this.#spotify.isReady) {
-		//
-		// 	setTimeout(() => _this.drawSpotify, 1000);
-			//
-			// this.drawSpotify();
-			// return;
-		// }
-
-		// document.getElementById('test').innerText = (new Date()).getTime();
-
-		// this.#spotify.getCurrentlyPlaying().then(result => {
-		// 	console.log(result.item.album.images[1].url);
-
-			// this.#accessToken = result.access_token;
-			// setTimeout(this.authorise, result.expires_in);
-
-			//This is working, however draw will clear the screen every frame
-			//TODO sync spotify asynchronously once per second, should be fine according to my quick goooglinh
-			//TODO assume the progression of the song
-			//TODO render useful data
-
-			//draw album cover
-
-			const item = this.#spotifyNowPlayingData.item;
-			const albumCoverSrc = item.album.images[1].url;
-
-
-
-			//only redraw the image if the source has changed
-			if(this.#currentAlbumCover && this.#currentAlbumCover.src === albumCoverSrc) { // || this.#currentAlbumCover.src !== albumCoverSrc) {
-				this.#context.drawImage(this.#currentAlbumCover, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
-			} else {
-				const image = new Image(100, 100);
-				image.addEventListener('load', () => {
-					// dump("Draw me :)");
-					this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
-				}, false);
-				image.setAttribute('is-local-file', '0');
-				// image.src = albumCoverSrc;
-				image.src = albumCoverSrc;
-				// image.src = 'https://i.scdn.co/image/ab67616d00001e02efe55e4449fe3cc1b1c9fd03';
-
-				//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
-				//Also saves a buttload of network traffic
-				this.#currentAlbumCover = image;
-			}
-
-			this.#context.font = '50px Arial Black';
-			this.#context.fillStyle = 'rgb(255, 255, 255)';
-
-
-			// - ${this.#spotifyNowPlayingData.popularity}/100
-			this.#context.fillText(`${item.name}`, this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 70);
-
-			// + ` - duration: ${this.#spotifyNowPlayingData.duration_ms}ms`
-			this.#context.font = '30px Arial Black';
-			this.#context.fillText(item.artists.map(x => x.name).join(', '), this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + 110);
-
-		/*})
-			.catch(_ => {
-				//will also end up in here on json decode errors => if nothing is playing, ty spotify
-
-				// console.trace();
-				// console.error(JSON.stringify(_));
-
-				dump("Errrrrr")
-
-				// document.getElementById('test').innerText += 'error: ' + JSON.stringify(error);
-				this.#context.font = '30px Arial Black';
-				this.#context.fillStyle = 'rgb(255, 255, 255)';
-
-				this.#context.fillText('Nothing is playing', this.#dimensions.centerX, this.#dimensions.centerY + 90);
-
-			})
-			 .finally(() => {
-			 	setTimeout(() => this.drawSpotify, 1000);
-			 });*/
-
-
 	}
 
 	drawSynthesizer = () => {
@@ -294,8 +204,8 @@ class ScreenManager {
 			this.#context.fillRect(x + (bar.width + m) * i, this.#dimensions.centerY - height, bar.width, height)
 		});
 
-		const width = (this.#spotifyNowPlayingData ? (this.#spotifyNowPlayingData.progress_ms / this.#spotifyNowPlayingData.item.duration_ms) * this.getVisualiserWidth() : 0);
-		this.#context.fillRect(x, this.#dimensions.centerY + 1 , clamp(width, 0, this.getVisualiserWidth()), 5);
+		// const width = (this.#spotifyNowPlayingData ? (this.#spotifyNowPlayingData.progress_ms / this.#spotifyNowPlayingData.item.duration_ms) * this.getVisualiserWidth() : 0);
+		this.#context.fillRect(x, this.#dimensions.centerY + 1 , clamp(this.#spotifyProgress, 0, this.getVisualiserWidth()), 5);
 	}
 
 	calculateVisualiserGradient = (x) => {
@@ -321,7 +231,79 @@ class ScreenManager {
 		return this.#dimensions.centerX - (this.getVisualiserWidth() / 2);
 	}
 
-	isInitilised() {
+	isInitilised = () => {
 		return this.#visualiserBars.length > 0;
+	}
+
+	drawNothingPlaying= () => {
+		if(this.#currentAlbumCover && this.#currentAlbumCover.hasAttribute('is-local-file') && this.#currentAlbumCover.getAttribute('is-local-file') === '1') {
+			this.drawAlbumCover(this.#currentAlbumCover);
+		} else {
+			//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
+			//Also saves a buttload of network traffic
+
+			this.#currentAlbumCover = this.createAlbumCoverImage('img/404.png', 1);
+		}
+
+		this.drawSongTitle('Nothing is playing');
+		this.drawSongSubtitle('Kinda quiet :(');
+	}
+
+	drawPlayingSongData = () => {
+		//draw album cover
+
+		const item = this.#spotifyNowPlayingData.item;
+		const albumCoverSrc = item.album.images[1].url;
+
+		//only redraw the image if the source has changed
+		if(this.#currentAlbumCover && this.#currentAlbumCover.src === albumCoverSrc) { // || this.#currentAlbumCover.src !== albumCoverSrc) {
+			this.drawAlbumCover(this.#currentAlbumCover)
+		} else {
+			//we have to save this, otherwise te clearing of the snowflakes will mess with the rendering of the image
+			//Also saves a buttload of network traffic
+			this.#currentAlbumCover = this.createAlbumCoverImage(albumCoverSrc, 0);
+		}
+
+		this.drawSongTitle(item.name);
+		this.drawSongSubtitle(item.artists.map(x => x.name).join(', '));
+
+		//if paused show the || symbol
+		if(!this.#spotifyNowPlayingData.is_playing) {
+			this.drawAlbumCover(this.#isPausedImage)
+		}
+	}
+
+	drawAlbumCover= (image) => {
+		this.#context.drawImage(image, this.getStartingXOfVisualiser(), this.#dimensions.centerY + 30, 100, 100);
+	}
+
+	drawSongTitle = (text) => {
+		this.setFont(this.#songTitleFontSize);
+		this.#context.fillStyle = 'rgb(255, 255, 255)';
+
+		this.#context.fillText(text, this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + this.#songDataTopMargin);
+	}
+
+	drawSongSubtitle = (text) => {
+		this.setFont(this.#songSubtitleFontSize);
+		this.#context.fillStyle = 'rgb(255, 255, 255)';
+
+		this.#context.fillText(text, this.getStartingXOfVisualiser() + this.#currentAlbumCover.width + 10, this.#dimensions.centerY + this.#songTitleFontSize + this.#songDataTopMargin);
+	}
+
+	setFont = (fontSize) => {
+		this.#context.font = `${fontSize}px Arial Black`;
+	}
+
+	createAlbumCoverImage = (src, isLocalFile) => {
+		const image = new Image(100, 100);
+		image.addEventListener('load', () => {
+			this.drawAlbumCover(image)
+		}, false);
+		image.setAttribute('is-local-file', isLocalFile.toString());
+		// image.src = albumCoverSrc;
+		image.src = src;
+
+		return image;
 	}
 }

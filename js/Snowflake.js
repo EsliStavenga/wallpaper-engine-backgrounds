@@ -92,7 +92,7 @@ class Snowflake {
 	}
 
 	isOutOfFrame() {
-		return this.#position.y > screen.height || this.#position.x > screen.width;
+		return this.#position.y > screen.height + this.diameter || this.#position.x > screen.width + this.diameter;
 	}
 }
 
