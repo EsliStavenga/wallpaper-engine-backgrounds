@@ -69,7 +69,7 @@ class Config {
 	 * Returns the value, or the default value of the value does not exist
 	 *
 	 * @param {string} option The name of the option
-	 * @param {string} [_default=''] The default value to return
+	 * @param {string|boolean|int} [_default=''] The default value to return
 	 * @return {string} The value of the config optoin
 	 */
 	getConfigOption(option, _default = '') {

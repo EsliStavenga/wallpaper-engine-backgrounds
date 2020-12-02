@@ -12,7 +12,7 @@ class SpotifyConnectorService {
 		this.#config = Config.getInstance();
 		this.#config.onConfigChanged = (_) => {
 			if(this.#config.hasConfigOption('txt_spotify_refresh_token')) {
-				this.#accessToken.refreshToken = this.#config.getConfigOption('txt_spotify_refresh_token', 'AQBYpHADyjubxQDwVHQVPtUocV6tZHkoznvIRdBu140DM1xMUT0F54uBCYNtgJDPJ31P7kLc842a7zte36Dv38-AL5m9-2o_Wzb2Hbh7i1pjwYO3uC_WGpC_xz04kLj9Myg');
+				this.#accessToken.refreshToken = this.#config.getConfigOption('txt_spotify_refresh_token');
 				this.authorise();
 			}
 		}
@@ -46,7 +46,6 @@ class SpotifyConnectorService {
 			})
 			.catch(error => {
 				console.log('error', error)
-				document.getElementById('test').innerText += JSON.stringify(this.#accessToken);
 			} );
 	}
 
@@ -83,7 +82,7 @@ class SpotifyConnectorService {
 			return `Bearer ${this.#accessToken.accessToken}`;
 		}
 
-		return `Basic ${btoa(`${this.#config.getConfigOption('clientid', 'b7126d28442c46a686cbce54e7d81790')}:${this.#config.getConfigOption('clientsecret', '2845ee9a128742939fb0339a16579223')}`)}`;
+		return `Basic ${btoa(`${this.#config.getConfigOption('clientid')}:${this.#config.getConfigOption('clientsecret')}`)}`;
 	}
 
 	/**
@@ -107,7 +106,7 @@ class SpotifyConnectorService {
 	 */
 	getAuthBody() {
 		return this.buildBody({
-			refresh_token: 'AQBYpHADyjubxQDwVHQVPtUocV6tZHkoznvIRdBu140DM1xMUT0F54uBCYNtgJDPJ31P7kLc842a7zte36Dv38-AL5m9-2o_Wzb2Hbh7i1pjwYO3uC_WGpC_xz04kLj9Myg', // this.#accessToken.refreshToken,
+			refresh_token: this.#accessToken.refreshToken,
 			grant_type: 'refresh_token'
 		});
 	}
