@@ -7,6 +7,7 @@ class SpotifyDataService {
 	#spotify;
 	#spotifyNowPlayingData;
 	#spotifyProgress = 0;
+	#requestLoop;
 
 	#currentAlbumCover = undefined;
 	#songTitleFontSize = 50;
@@ -14,6 +15,15 @@ class SpotifyDataService {
 	#songDataTopMargin = 70;
 	#visualiserWidth;
 	#startingX;
+
+	set isPaused(val) {
+		if(val) {
+			clearInterval(this.#requestLoop);
+		} else {
+			this.startRequestLoop();
+		}
+
+	}
 
 	set startingX(val) {
 		this.#startingX = val;
@@ -40,7 +50,7 @@ class SpotifyDataService {
 		this.#screenDimensions = screenDimensions;
 		this.#isPausedImage = this.createAlbumCoverImage('img/paused.png', 1);
 
-		this.requestSpotifyData();
+		this.startRequestLoop();
 	}
 
 	update = (dt) => {
@@ -52,7 +62,7 @@ class SpotifyDataService {
 	draw = (context) => {
 		this.#context = context;
 
-		// dump(this.#spotifyNowPlayingData)
+		// dump(this.#spotifyNowPlayingData);
 
 		if(!this.#spotifyNowPlayingData) {
 			this.drawNothingPlaying();
@@ -65,20 +75,17 @@ class SpotifyDataService {
 
 		this.#spotify.authorise().then(() => {
 			this.#spotify.getCurrentlyPlaying().then(result => {
-				this.#spotifyNowPlayingData = result
-				this.#spotifyProgress = (this.#spotifyNowPlayingData.progress_ms / this.#spotifyNowPlayingData.item.duration_ms) * this.getVisualiserWidth()
+				this.#spotifyNowPlayingData = result;
+				this.#spotifyProgress = (this.#spotifyNowPlayingData.progress_ms / this.#spotifyNowPlayingData.item.duration_ms) * this.#visualiserWidth;
 			})
 				.catch(_ => {
-
-					this.#spotifyNowPlayingData = undefined
+					this.#spotifyNowPlayingData = undefined;
 					this.#spotifyProgress = 0;
 				});
 		})
-
-		setTimeout(this.requestSpotifyData, 1000);
 	}
 
-	drawNothingPlaying= () => {
+	drawNothingPlaying = () => {
 		if(this.#currentAlbumCover && this.#currentAlbumCover.hasAttribute('is-local-file') && this.#currentAlbumCover.getAttribute('is-local-file') === '1') {
 			this.drawAlbumCover(this.#currentAlbumCover);
 		} else {
@@ -142,19 +149,30 @@ class SpotifyDataService {
 		this.#context.font = `${fontSize}px Arial Black`;
 	}
 
-	createAlbumCoverImage = (src, isLocalFile) => {
+	createAlbumCoverImage = (src, isLocalFile = '0') => {
 		const image = new Image(100, 100);
 		image.addEventListener('load', () => {
 			this.drawAlbumCover(image)
 		}, false);
 		image.setAttribute('is-local-file', isLocalFile.toString());
-		// image.src = albumCoverSrc;
 		image.src = src;
 
 		return image;
 	}
 
 	drawProgressBar = () => {
-		this.#context.fillRect(x, this.#screenDimensions.centerY + 1 , clamp(this.#spotifyProgress, 0, this.#visualiserWidth), 5);
+		//TODO this is copy pasta
+		const gradient = this.#context.createLinearGradient(this.#startingX, this.#screenDimensions.centerY, this.#screenDimensions.x - this.#startingX, this.#screenDimensions.centerY);
+		gradient.addColorStop(0, Config.getInstance().getColorOption('cp_gradient_bar_0'));
+		gradient.addColorStop(0.25, Config.getInstance().getColorOption('cp_gradient_bar_1'));
+		gradient.addColorStop(0.5,  Config.getInstance().getColorOption('cp_gradient_bar_2'));
+		gradient.addColorStop(0.75,  Config.getInstance().getColorOption('cp_gradient_bar_3'));
+
+		this.#context.fillStyle = gradient;
+		this.#context.fillRect(this.#startingX, this.#screenDimensions.centerY + 1 , clamp(this.#spotifyProgress, 0, this.#visualiserWidth), 5);
+	}
+
+	startRequestLoop = () => {
+		this.#requestLoop = setInterval(this.requestSpotifyData, 1000);
 	}
 }

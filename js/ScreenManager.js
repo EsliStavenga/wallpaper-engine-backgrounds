@@ -3,12 +3,37 @@ class ScreenManager {
 	#config = Config.getInstance();
 	#snowflakes = [];
 	#visualiserBars = [];
-
 	#maxSnowflakeCount;
+
+	#canvas;
 	#context;
 	#lastFrameDateTime;
 	#dimensions;
 	#spotifyDataService;
+
+	#isPaused = false;
+
+	set isPaused(val) {
+		this.#isPaused = val;
+		this.#spotifyDataService.isPaused = this.#isPaused;
+
+		if(!val) {
+			this.clearScreenFully();
+		}
+	}
+
+	set dimensions(val) {
+		if(!val instanceof Vec2) {
+			return;
+		}
+
+		this.#dimensions = val;
+
+		if(this.#canvas) {
+			this.#canvas.width = val.x;
+			this.#canvas.height = val.y;
+		}
+	}
 
 	set audio(values) {
 		// values = ;
@@ -60,15 +85,19 @@ class ScreenManager {
 	handleNextFrame = () => {
 		requestAnimationFrame(this.handleNextFrame);
 
+		if(this.#isPaused) {
+			return;
+		}
+
 		const now = DateService.getNowTimestamp();
 		const dt = (now - this.#lastFrameDateTime) / 1000;
 		this.#lastFrameDateTime = now;
-
 		//TODO on click
 		// this.#snowflakes.push(new Snowflake(200, 100));
 
 		//generate extra snowflakes if necessary
 		this.generateSnowflakes(dt);
+
 		this.update(dt);
 		this.render();
 	}
@@ -95,6 +124,7 @@ class ScreenManager {
 		canvas.height = this.#dimensions.y;
 
 		document.body.append(canvas);
+		this.#canvas = canvas;
 		this.#context = canvas.getContext('2d');
 	}
 
@@ -124,11 +154,15 @@ class ScreenManager {
 		this.#spotifyDataService.draw(this.#context);
 	}
 
+	/**
+	 * Clear the parts of the screen that are likely to be redrawn
+	 */
 	clearScreen = () => {
 		//only clear everything near snowflake
 		this.#snowflakes.forEach(s => {
 			//clear a slightly bigger radius than the actual snowflake
 			//because of its angle otherwise it will sometimes leave a trail
+			//and because its position is updated before we draw
 			const d= Math.ceil(s.diameter * 6);
 			this.#context.clearRect(s.left - s.diameter * 3, s.top - s.diameter * 3, d, d)
 		});
@@ -141,7 +175,13 @@ class ScreenManager {
 
 		//clear spotify dat
 		this.#context.clearRect(startX, this.#dimensions.centerY, this.getVisualiserWidth(), this.#spotifyDataService.songDataTopMargin +this.#spotifyDataService.songSubtitleFontSize + this.#spotifyDataService.songTitleFontSize);
+	}
 
+	/**
+	 * Clears the entire screen in one go
+	 */
+	clearScreenFully = () => {
+		this.#context.clearRect(0, 0, this.#dimensions.x, this.#dimensions.y);
 	}
 
 	drawSnowflakes = () => {
