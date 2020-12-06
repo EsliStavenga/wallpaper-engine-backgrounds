@@ -198,7 +198,7 @@ class ScreenManager {
 		// if(!this.#visualiserBarsGradient)
 		// 	this.recalculateVisualiserBarsGradient();
 
-		this.#context.fillStyle = this.calculateVisualiserGradient(x);
+		this.#context.fillStyle = this.#config.createVisualiserGradient(this.#context, new Vec2(x, this.#dimensions.centerY), new Vec2(this.#dimensions.x, this.#dimensions.centerY));
 
 		this.#visualiserBars.forEach((bar, i) => {
 			const height = bar.height * this.#config.getConfigOption('slider_height_amplifier');
@@ -206,16 +206,6 @@ class ScreenManager {
 			this.#context.fillRect(x + (bar.width + m) * i, this.#dimensions.centerY - height, bar.width, height)
 		});
 
-	}
-
-	calculateVisualiserGradient = (x) => {
-		const gradient = this.#context.createLinearGradient(x, this.#dimensions.centerY, this.#dimensions.x - x, this.#dimensions.centerY);
-		gradient.addColorStop(0, this.#config.getColorOption('cp_gradient_bar_0'));
-		gradient.addColorStop(0.25, this.#config.getColorOption('cp_gradient_bar_1'));
-		gradient.addColorStop(0.5,  this.#config.getColorOption('cp_gradient_bar_2'));
-		gradient.addColorStop(0.75,  this.#config.getColorOption('cp_gradient_bar_3'));
-
-		return gradient;
 	}
 
 	getVisualiserWidth = () => {

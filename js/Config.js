@@ -76,5 +76,22 @@ class Config {
 		return this.config[option]?.value || _default;
 	}
 
+	/**
+	 *
+	 * @param {CanvasRenderingContext2D} context The context the gradient will be drawn on
+	 * @param {Vec2} position
+	 * @param {Vec2} dimensions
+	 *
+	 * @return {CanvasGradient}
+	 */
+	createVisualiserGradient(context, position, dimensions) {
+		const gradient = context.createLinearGradient(position.x, position.centerY, dimensions.x - position.x, dimensions.centerY);
+		gradient.addColorStop(0, this.getColorOption('cp_gradient_bar_0'));
+		gradient.addColorStop(0.25, this.getColorOption('cp_gradient_bar_1'));
+		gradient.addColorStop(0.5,  this.getColorOption('cp_gradient_bar_2'));
+		gradient.addColorStop(0.75,  this.getColorOption('cp_gradient_bar_3'));
+
+		return gradient;
+	}
 
 }

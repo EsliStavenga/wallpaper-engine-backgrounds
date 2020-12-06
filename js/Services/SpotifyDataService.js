@@ -161,14 +161,7 @@ class SpotifyDataService {
 	}
 
 	drawProgressBar = () => {
-		//TODO this is copy pasta
-		const gradient = this.#context.createLinearGradient(this.#startingX, this.#screenDimensions.centerY, this.#screenDimensions.x - this.#startingX, this.#screenDimensions.centerY);
-		gradient.addColorStop(0, Config.getInstance().getColorOption('cp_gradient_bar_0'));
-		gradient.addColorStop(0.25, Config.getInstance().getColorOption('cp_gradient_bar_1'));
-		gradient.addColorStop(0.5,  Config.getInstance().getColorOption('cp_gradient_bar_2'));
-		gradient.addColorStop(0.75,  Config.getInstance().getColorOption('cp_gradient_bar_3'));
-
-		this.#context.fillStyle = gradient;
+		this.#context.fillStyle = Config.getInstance().createVisualiserGradient(this.#context, new Vec2(this.#startingX,  this.#screenDimensions.centerY), new Vec2(this.#screenDimensions.x, this.#screenDimensions.centerY));
 		this.#context.fillRect(this.#startingX, this.#screenDimensions.centerY + 1 , clamp(this.#spotifyProgress, 0, this.#visualiserWidth), 5);
 	}
 
