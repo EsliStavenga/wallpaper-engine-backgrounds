@@ -11,6 +11,14 @@ class Snowflake {
 		return this.#diameter;
 	}
 
+	get posY() {
+		return this.#position.y;
+	}
+
+	get posX() {
+		return this.#position.x;
+	}
+
 	/**
 	 * Get left coordinate of the snowflake
 	 * @return {number}
@@ -64,9 +72,9 @@ class Snowflake {
 		return this.isOutOfFrame();
 	}
 
-	update = (dt) => {
-		this.#position.y += this.#gravity * dt;
-		this.#position.x += this.#velocity * dt;
+	update = (dt, speedModifier = 1) => {
+		this.#position.y += this.#gravity * dt * speedModifier;
+		this.#position.x += this.#velocity * dt  * speedModifier;
 
 		if(this.#gravity !== this.#targetGravity) {
 			this.#gravity += (this.#targetGravity > this.#gravity ? 10 : -10) / 100;

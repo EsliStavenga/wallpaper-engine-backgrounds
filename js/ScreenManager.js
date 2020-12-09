@@ -4,6 +4,7 @@ class ScreenManager {
 	#snowflakes = [];
 	#visualiserBars = [];
 	#maxSnowflakeCount;
+	#snowflakeSpeedModifier = 1;
 
 	#canvas;
 	#context;
@@ -36,26 +37,38 @@ class ScreenManager {
 	}
 
 	set audio(values) {
-		// values = ;
+		this.#snowflakeSpeedModifier = clamp(this.#snowflakeSpeedModifier-0.2, 1, 5);
 
 		//only loop over left ear channel
 		values.splice(0, values.length / 2).forEach((value, index) => {
-			if(!this.#visualiserBars[index]) {
-				this.#visualiserBars.push(new Bar(this.#config.getConfigOption('slider_bar_width', 15), value));
+			let existingBar = this.#visualiserBars[index];
+			const newHeight = (value + values[index]) / 2 * 2000;
+
+			if(!existingBar) {
 
 				this.#spotifyDataService.startingX = this.getStartingXOfVisualiser();
 				this.#spotifyDataService.visualiserWidth = this.getVisualiserWidth();
+
+				existingBar = new Bar(this.#config.getConfigOption('slider_bar_width', 15), value);
+				this.#visualiserBars.push(existingBar);
+			}
+
+
+			//if the difference between the two heights is, idk some random value, or more, then snowflakes go brrrr
+			//bar should be at least 150px tall, don't want this eeffect on quiet songs
+			if(newHeight > 100 && existingBar.height - newHeight > 100) {
+				this.#snowflakeSpeedModifier = clamp((existingBar.height - newHeight) / 40, 1, 5);
 			}
 
 			/*  okay so this looks hacky, however it's not
 				@line 16 we splice the values, which returns the first half off the array AKA the left channel
 			    That also changes the reference of values to only contain whatever is left after splicing AKA the right ear
 			 	So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index] */
-			this.#visualiserBars[index].height = (value + values[index]) / 2 * 2000;
+			existingBar.height = newHeight;
 		});
 	}
 
-	constructor(maxSnowflakeCount = 200) {
+	constructor(maxSnowflakeCount = 110) {
 		this.#maxSnowflakeCount = maxSnowflakeCount;
 		this.#dimensions = new Vec2(window.innerWidth, window.innerHeight);
 		this.#spotifyDataService = new SpotifyDataService(this.#dimensions);
@@ -73,8 +86,15 @@ class ScreenManager {
 		}
 
 		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
-		for(let i = 0, limit = randomNumber(75, maxSnowflakeCount / 2); i < limit; i++) {
-			const x = randomNumber(0, this.#dimensions.x), y =  randomNumber(0, this.#dimensions.y);
+		for(let i = 0; i < maxSnowflakeCount; i++) {
+			let x = randomNumber(-50, this.#dimensions.x), y =  randomNumber(0, this.#dimensions.y);
+			let tries = 0;
+			//try to keep every snowflake away from other snowflakes for a maximum of 5 times, after which just accept your fate
+			while(tries <= 5 && (this.#snowflakes.filter(s => s.posX - x <= 50 && s.posY - y < 50)).length > 0) {
+				x =  randomNumber(-50, this.#dimensions.x);
+				y =  randomNumber(0, this.#dimensions.y);
+				tries++;
+			}
 
 			this.#snowflakes.push(new Snowflake(x, y));
 		}
@@ -96,26 +116,9 @@ class ScreenManager {
 		// this.#snowflakes.push(new Snowflake(200, 100));
 
 		//generate extra snowflakes if necessary
-		this.generateSnowflakes(dt);
 
 		this.update(dt);
 		this.render();
-	}
-
-	generateSnowflakes = () => {
-		//if already max amount of snowflakes, return
-		if(this.#snowflakes.length === this.#maxSnowflakeCount) {
-			return;
-		}
-
-		for(let i = this.#snowflakes.length; i < this.#maxSnowflakeCount; i++) {
-			if(randomNumber(0, 1) > 0.9999) { //very low probability to generate a snowflake
-				this.#snowflakes.push(new Snowflake());
-
-				//generate a max of 1 snowflake per update cycle
-				return;
-			}
-		}
 	}
 
 	createCanvas = () => {
@@ -132,10 +135,11 @@ class ScreenManager {
 		this.#snowflakes.forEach((s, index) => {
 			if(s.isSafeToDestroy()) {
 				this.#snowflakes.splice(index, 1); //remove the snowflake if out of bounds
+				this.#snowflakes.push(new Snowflake()); //add a new one at the start
 				return;
 			}
 
-			s.update(dt);
+			s.update(dt, this.#snowflakeSpeedModifier);
 		});
 
 		this.#visualiserBars.forEach(b => b.update());

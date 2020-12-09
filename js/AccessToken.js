@@ -44,7 +44,7 @@ class AccessToken {
 	}
 
 	hasExpired = () => {
-		return !this.expiresAt || this.expiresAt <= (new Date()).getTime();
+		return !this.accessToken || !this.expiresAt || this.expiresAt <= (new Date()).getTime();
 	}
 
 }
