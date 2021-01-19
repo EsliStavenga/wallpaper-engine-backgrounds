@@ -15,6 +15,7 @@ class SpotifyDataService {
 	#songDataTopMargin = 70;
 	#visualiserWidth;
 	#startingX;
+	#imageDimensions = 100;
 
 	set isPaused(val) {
 		if(val) {
@@ -22,7 +23,6 @@ class SpotifyDataService {
 		} else {
 			this.startRequestLoop();
 		}
-
 	}
 
 	set startingX(val) {
@@ -54,7 +54,7 @@ class SpotifyDataService {
 	}
 
 	update = (dt) => {
-		if(this.#spotifyNowPlayingData && this.#spotifyNowPlayingData.is_playing) {
+		if(this.isPlayerPlaying()) {
 			this.#spotifyProgress += (this.#visualiserWidth / this.#spotifyNowPlayingData.item.duration_ms * 1000 * dt);
 		}
 	}
@@ -120,15 +120,44 @@ class SpotifyDataService {
 		this.drawProgressBar();
 
 		//if paused show the || symbol
-		if(!this.#spotifyNowPlayingData.is_playing) {
+		if(!this.isPlayerPlaying()) {
 			this.drawAlbumCover(this.#isPausedImage)
 		}
 	}
 
-	drawAlbumCover = (image) => {
-		// dump(this.#startingX);
+	isPlayerPlaying = () => {
+		return this.#spotifyNowPlayingData && this.#spotifyNowPlayingData.is_playing;
+	}
 
-		this.#context.drawImage(image, this.#startingX, this.#screenDimensions.centerY + 30, 100, 100);
+	resumePlayer = () => {
+		if(this.#spotifyNowPlayingData) {
+			this.#spotify.resume();
+		}
+	}
+
+	pausePlayer = () => {
+		if(this.#spotifyNowPlayingData) {
+			this.#spotify.pause();
+		}
+	}
+
+
+
+	togglePlayPause = () => {
+		if(!this.isPlayerPlaying()) {
+			this.resumePlayer();
+		} else {
+			this.pausePlayer();
+		}
+	}
+
+	isClickOnImage = (x, y) => {
+		return (x >= this.#startingX && x <= this.#startingX + this.#imageDimensions ) &&
+			(y >= this.#screenDimensions.centerY && y <= this.#screenDimensions.centerY + this.#imageDimensions);
+	}
+
+	drawAlbumCover = (image) => {
+		this.#context.drawImage(image, this.#startingX, this.#screenDimensions.centerY + 30, this.#imageDimensions, this.#imageDimensions);
 	}
 
 	drawSongTitle = (text) => {

@@ -3,6 +3,7 @@ class SpotifyConnectorService {
 	#isReady = false;
 	#config;
 	#accessToken = new AccessToken();
+	#basePlayerURL  = 'https://api.spotify.com/v1/me/player';
 
 	get isReady() {
 		return this.#isReady;
@@ -17,6 +18,19 @@ class SpotifyConnectorService {
 			}
 		}
 	}
+
+	resume() {
+		return new Promise((resolve, reject) => {
+			this.sendRequest(`${this.#basePlayerURL}/play`,'PUT', resolve, reject);
+		});
+	}
+
+	pause() {
+		return new Promise((resolve, reject) => {
+			this.sendRequest(`${this.#basePlayerURL}/pause`,'PUT', resolve, reject);
+		});
+	}
+
 
 	/**
 	 * Get a new access token
@@ -58,19 +72,22 @@ class SpotifyConnectorService {
 
 		return new Promise((resolve, reject) => {
 			this.authorise().then(() => {
-				const requestOptions = {
-					method: 'GET',
-					headers: this.getHeaders(),
-					// body: this.getAuthBody(),
-					redirect: 'follow'
-				};
-
-				fetch('https://api.spotify.com/v1/me/player/currently-playing?market=ES', requestOptions)
-					.then(response => {
-						response.json().then(json => resolve(json)).catch(e => reject(e));
-					});
+				this.sendRequest(`${this.#basePlayerURL}/currently-playing?market=ES`,'GET', resolve, reject);
 			});
 		});
+	}
+
+	sendRequest(url, method, resolve, reject) {
+		const requestOptions = {
+			method: method,
+			headers: this.getHeaders(),
+			redirect: 'follow'
+		};
+
+		fetch(url, requestOptions)
+			.then(response => {
+				response.json().then(json => resolve(json)).catch(e => reject(e));
+			});
 	}
 
 	/**

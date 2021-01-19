@@ -45,10 +45,6 @@ class ScreenManager {
 			const newHeight = (value + values[index]) / 2 * 2000;
 
 			if(!existingBar) {
-
-				this.#spotifyDataService.startingX = this.getStartingXOfVisualiser();
-				this.#spotifyDataService.visualiserWidth = this.getVisualiserWidth();
-
 				existingBar = new Bar(this.#config.getConfigOption('slider_bar_width', 15), value);
 				this.#visualiserBars.push(existingBar);
 			}
@@ -66,6 +62,9 @@ class ScreenManager {
 			 	So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index] */
 			existingBar.height = newHeight;
 		});
+
+		this.#spotifyDataService.startingX = this.getStartingXOfVisualiser();
+		this.#spotifyDataService.visualiserWidth = this.getVisualiserWidth();
 	}
 
 	constructor(maxSnowflakeCount = 110) {
@@ -162,23 +161,7 @@ class ScreenManager {
 	 * Clear the parts of the screen that are likely to be redrawn
 	 */
 	clearScreen = () => {
-		//only clear everything near snowflake
-		this.#snowflakes.forEach(s => {
-			//clear a slightly bigger radius than the actual snowflake
-			//because of its angle otherwise it will sometimes leave a trail
-			//and because its position is updated before we draw
-			const d= Math.ceil(s.diameter * 6);
-			this.#context.clearRect(s.left - s.diameter * 3, s.top - s.diameter * 3, d, d)
-		});
-
-		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
-		const startX = this.getStartingXOfVisualiser();
-
-		//only clear visualiser and progress bar
-		this.#context.clearRect(startX, 0, this.getVisualiserWidth(), this.#dimensions.centerY + 30);
-
-		//clear spotify dat
-		this.#context.clearRect(startX, this.#dimensions.centerY, this.getVisualiserWidth(), this.#spotifyDataService.songDataTopMargin +this.#spotifyDataService.songSubtitleFontSize + this.#spotifyDataService.songTitleFontSize);
+		this.#context.clearRect(0, 0, this.#dimensions.x, this.#dimensions.y);
 	}
 
 	/**
@@ -223,5 +206,11 @@ class ScreenManager {
 
 	getStartingXOfVisualiser = () => {
 		return this.#dimensions.centerX - (this.getVisualiserWidth() / 2);
+	}
+
+	handleClick = (e) => {
+		if(this.#spotifyDataService.isClickOnImage(e.clientX, e.clientY)) {
+			this.#spotifyDataService.togglePlayPause();
+		}
 	}
 }
