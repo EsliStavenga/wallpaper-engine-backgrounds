@@ -22,6 +22,15 @@
 <script>
 	const screenManager = new ScreenManager();
 	let lastAudioDateTime = DateService.getNowTimestamp();
+	var _dump = false;
+
+	function dump(...val) {
+		_dump = true;
+		val.forEach(x => {
+
+			document.getElementById('test').innerText += JSON.stringify(x) + '\n';
+		})
+	}
 
 	function audioListener(audio) {
 		const now = DateService.getNowTimestamp();
