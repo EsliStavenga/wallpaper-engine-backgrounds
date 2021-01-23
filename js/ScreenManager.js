@@ -17,10 +17,6 @@ class ScreenManager {
 	set isPaused(val) {
 		this.#isPaused = val;
 		this.#spotifyDataService.isPaused = this.#isPaused;
-
-		if(!val) {
-			this.clearScreenFully();
-		}
 	}
 
 	set dimensions(val) {
@@ -37,12 +33,15 @@ class ScreenManager {
 	}
 
 	set audio(values) {
-		this.#snowflakeSpeedModifier = clamp(this.#snowflakeSpeedModifier-0.2, 1, 5);
+		//decline the speed nearly instantly
+		this.#snowflakeSpeedModifier = clamp(this.#snowflakeSpeedModifier-(this.#snowflakeSpeedModifier * 0.8), 1, 5);
+		let speedIncreaseBarCount = 0;
+		let maxSpeedModifier = 0;
 
 		//only loop over left ear channel
 		values.splice(0, values.length / 2).forEach((value, index) => {
 			let existingBar = this.#visualiserBars[index];
-			const newHeight = (value + values[index]) / 2 * 2000;
+			const newHeight = (value ) * 2000;
 
 			if(!existingBar) {
 				existingBar = new Bar(this.#config.getConfigOption('slider_bar_width', 15), value);
@@ -52,8 +51,9 @@ class ScreenManager {
 
 			//if the difference between the two heights is, idk some random value, or more, then snowflakes go brrrr
 			//bar should be at least 150px tall, don't want this eeffect on quiet songs
-			if(newHeight > 100 && existingBar.height - newHeight > 100) {
-				this.#snowflakeSpeedModifier = clamp((existingBar.height - newHeight) / 40, 1, 5);
+			if(newHeight > 100 && existingBar.height - newHeight > 60) {
+				speedIncreaseBarCount++;
+				maxSpeedModifier = Math.max(clamp((existingBar.height - newHeight) / 40, 1, 5) * 8, maxSpeedModifier);
 			}
 
 			/*  okay so this looks hacky, however it's not
@@ -62,6 +62,11 @@ class ScreenManager {
 			 	So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index] */
 			existingBar.height = newHeight;
 		});
+
+		//if atleast 5 bars have a sudden increase in volume
+		if(speedIncreaseBarCount >= 3) {
+			this.#snowflakeSpeedModifier = maxSpeedModifier;
+		}
 
 		this.#spotifyDataService.startingX = this.getStartingXOfVisualiser();
 		this.#spotifyDataService.visualiserWidth = this.getVisualiserWidth();
@@ -84,10 +89,21 @@ class ScreenManager {
 			}
 		}
 
-		//generate between 75 and maxSnowFlakeCount / 2 (e.g. 100) random snowflakes to start us off
-		for(let i = 0; i < maxSnowflakeCount; i++) {
+		this.reset();
+	}
+
+	reset = () => {
+		this.clearScreenFully();
+		this.#snowflakes = [];
+		this.generateRandomlyPlacedSnowflakes();
+	}
+
+	generateRandomlyPlacedSnowflakes = () => {
+		//generate between 75 and maxSnowFlakeCount (e.g. 100) random snowflakes to start us off
+		for(let i = 0; i < this.#maxSnowflakeCount; i++) {
 			let x = randomNumber(-50, this.#dimensions.x), y =  randomNumber(0, this.#dimensions.y);
 			let tries = 0;
+
 			//try to keep every snowflake away from other snowflakes for a maximum of 5 times, after which just accept your fate
 			while(tries <= 5 && (this.#snowflakes.filter(s => s.posX - x <= 50 && s.posY - y < 50)).length > 0) {
 				x =  randomNumber(-50, this.#dimensions.x);
@@ -97,22 +113,22 @@ class ScreenManager {
 
 			this.#snowflakes.push(new Snowflake(x, y));
 		}
-
 	}
 
 
 	handleNextFrame = () => {
 		requestAnimationFrame(this.handleNextFrame);
 
-		if(this.#isPaused) {
-			return;
-		}
-
 		const now = DateService.getNowTimestamp();
 		const dt = (now - this.#lastFrameDateTime) / 1000;
 		this.#lastFrameDateTime = now;
 		//TODO on click
 		// this.#snowflakes.push(new Snowflake(200, 100));
+
+		//This should be after dt calculation else the dt will be insane
+		if(this.#isPaused) {
+			return;
+		}
 
 		//generate extra snowflakes if necessary
 

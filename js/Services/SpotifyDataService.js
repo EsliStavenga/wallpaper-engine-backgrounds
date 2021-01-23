@@ -179,12 +179,11 @@ class SpotifyDataService {
 	}
 
 	createAlbumCoverImage = (src, isLocalFile = '0') => {
-		const image = new Image(100, 100);
-		image.addEventListener('load', () => {
+		const image = ImageService.createImageFromSource(src, () => {
 			this.drawAlbumCover(image)
-		}, false);
-		image.setAttribute('is-local-file', isLocalFile.toString());
-		image.src = src;
+		}, {
+			'is-local-file': isLocalFile.toString()
+		});
 
 		return image;
 	}
