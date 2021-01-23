@@ -31,6 +31,17 @@ class SpotifyConnectorService {
 		});
 	}
 
+	next() {
+		return new Promise((resolve, reject) => {
+			this.sendRequest(`${this.#basePlayerURL}/next`, 'POST', resolve, reject);
+		});
+	}
+
+	previous() {
+		return new Promise((resolve, reject) => {
+			this.sendRequest(`${this.#basePlayerURL}/previous`, 'POST', resolve, reject);
+		});
+	}
 
 	/**
 	 * Get a new access token

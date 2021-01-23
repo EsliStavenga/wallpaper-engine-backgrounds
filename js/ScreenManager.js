@@ -12,6 +12,11 @@ class ScreenManager {
 	#dimensions;
 	#spotifyDataService;
 
+	#previousButton = ImageService.createImageFromSource('img/previous.png');
+	#nextButton = ImageService.createImageFromSource('img/next.png');
+	#controlButtonsWidth = 43;
+	#controlButtonsHeight = 27;
+
 	#isPaused = false;
 
 	set isPaused(val) {
@@ -167,6 +172,7 @@ class ScreenManager {
 
 		//update and draw snowflakes
 		this.drawSnowflakes();
+		this.drawControlsButton();
 
 		//update and draw synthesizer after snow
 		this.drawSynthesizer();
@@ -227,6 +233,43 @@ class ScreenManager {
 	handleClick = (e) => {
 		if(this.#spotifyDataService.isClickOnImage(e.clientX, e.clientY)) {
 			this.#spotifyDataService.togglePlayPause();
+		} else if(this.isClickOnNextButton(e.clientX, e.clientY)) {
+			this.#spotifyDataService.nextSong()
+				.then((r) => {
+					dump(r);
+				})
+				.catch((error) => {
+				dump(error);
+			});
+		} else if(this.isClickOnPreviousButton(e.clientX, e.clientY)) {
+			this.#spotifyDataService.previousSong()
+				.then((r) => {
+					dump(r);
+				})
+				.catch((error) => {
+					dump(error);
+				});
 		}
+
+	}
+
+	isClickOnNextButton = (x, y) => {
+		return (x >= this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth && x <=this.getStartingXOfVisualiser() + this.getVisualiserWidth()) &&
+			(y >= this.#dimensions.centerY + 45 && y <= this.#dimensions.centerY + 45 + this.#controlButtonsHeight);
+	}
+
+	isClickOnPreviousButton = (x, y) => {
+		return (x >= this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth * 2 - 13 && x <= this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth - 13) &&
+			(y >= this.#dimensions.centerY + 45 && y <= this.#dimensions.centerY + 45 + this.#controlButtonsHeight);
+	}
+
+	drawControlsButton = () => {
+		if(!this.#config.getBooleanOption('cbx_show_controls')) {
+			return;
+		}
+
+		this.#context.drawImage(this.#nextButton, this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth, this.#dimensions.centerY + 45, this.#controlButtonsWidth, this.#controlButtonsHeight);
+		this.#context.drawImage(this.#previousButton, this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth * 2 - 13, this.#dimensions.centerY + 45, this.#controlButtonsWidth, this.#controlButtonsHeight);
+
 	}
 }

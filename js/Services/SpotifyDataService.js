@@ -141,7 +141,13 @@ class SpotifyDataService {
 		}
 	}
 
+	nextSong = () => {
+		this.#spotify.next();
+	}
 
+	previousSong = () => {
+		this.#spotify.previous();
+	}
 
 	togglePlayPause = () => {
 		if(!this.isPlayerPlaying()) {

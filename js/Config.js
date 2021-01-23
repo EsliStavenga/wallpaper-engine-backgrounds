@@ -76,6 +76,10 @@ class Config {
 		return this.config[option]?.value || _default;
 	}
 
+	getBooleanOption(option) {
+		return this.getConfigOption(option) !== 'true';
+	}
+
 	/**
 	 *
 	 * @param {CanvasRenderingContext2D} context The context the gradient will be drawn on
