@@ -19,7 +19,7 @@ class AccessToken {
 	}
 
 	get accessToken() {
-		return this.#accessToken || Config.getInstance().getConfigOption('txt_spotify_access_token', 'BQCWLk1MPMoAe7-Eqo_PPUVubIxlhMM7X-F3jGTVae-kHRxzyQsR1qfc9uAJ7DmuHJ1uQPuqKKsfD5Pu4aCA9b4hFtE6TmMGjym_-DO1LeYV3gsw7lq-beOy_Q85f9fxYxbTc5uUzshLLlX-adCfxuSa6wFSvmZMmInSYv7-9eIqhQg');
+		return this.#accessToken || Config.getInstance().getConfigOption('txt_spotify_access_token');
 	}
 
 	set refreshToken(val) {
@@ -31,7 +31,7 @@ class AccessToken {
 	}
 
 	get refreshToken() {
-		return this.#refreshToken || Config.getInstance().getConfigOption('txt_spotify_refresh_token', 'AQBigH7rvRj-LcPQpp6CPkAOD1RfvZYessC1Oe9aLx9yEViqim0_vV7PZRot-8XgIKrT3hINNNGMVkjY0DuZz4lu6PGRqWfo-ssm-9hvtqXIQfnvMo-btpk8Um1BvWsRx2c');
+		return this.#refreshToken || Config.getInstance().getConfigOption('txt_spotify_refresh_token');
 	}
 
 	get expiresIn() {

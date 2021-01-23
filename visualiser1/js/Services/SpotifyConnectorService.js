@@ -110,7 +110,7 @@ class SpotifyConnectorService {
 			return `Bearer ${this.#accessToken.accessToken}`;
 		}
 
-		return `Basic ${btoa(`${this.#config.getConfigOption('clientid', 'b7126d28442c46a686cbce54e7d81790')}:${this.#config.getConfigOption('clientsecret', '552be6ba2e9543e8afacdd3e8e99a646')}`)}`;
+		return `Basic ${btoa(`${this.#config.getConfigOption('clientid')}:${this.#config.getConfigOption('clientsecret')}`)}`;
 	}
 
 	/**
