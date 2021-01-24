@@ -29,7 +29,7 @@ class Bar {
 		this.#lastDimensionsUpdate = DateService.getNowTimestamp();
 	}
 
-	update() {
+	update = () => {
 
 		if((DateService.getNowTimestamp() - this.#lastDimensionsUpdate) / 1000 > Config.getInstance().getConfigOption('slider_bar_timeout') / 10) {
 			this.#targetDimensions = Object.assign({}, this.#dimensions);

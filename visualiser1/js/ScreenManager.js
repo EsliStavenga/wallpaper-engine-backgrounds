@@ -1,27 +1,30 @@
 class ScreenManager {
 
-	#config = Config.getInstance();
 	#snowflakes = [];
-	#visualiserBars = [];
 	#maxSnowflakeCount;
 	#snowflakeSpeedModifier = 1;
 
 	#canvas;
 	#context;
 	#lastFrameDateTime;
-	#dimensions;
 	#spotifyDataService;
+	#controlButtons;
+	#dimensions;
+	#visualiser;
+	#isMouseDown = false;
+	mouseDownEvent = false;
 
-	#previousButton = ImageService.createImageFromSource('img/previous.png');
-	#nextButton = ImageService.createImageFromSource('img/next.png');
-	#controlButtonsWidth = 43;
-	#controlButtonsHeight = 27;
-
-	#isPaused = false;
+	#isPaused = true;
+	#temporarySnowflakes = [];
 
 	set isPaused(val) {
 		this.#isPaused = val;
 		this.#spotifyDataService.isPaused = this.#isPaused;
+
+		if(!val) {
+			this.reset();
+		}
+
 	}
 
 	set dimensions(val) {
@@ -37,86 +40,38 @@ class ScreenManager {
 		}
 	}
 
-	set audio(values) {
-		//decline the speed nearly instantly
-		this.#snowflakeSpeedModifier = clamp(this.#snowflakeSpeedModifier-(this.#snowflakeSpeedModifier * 0.8), 1, 5);
-		let speedIncreaseBarCount = 0;
-		let maxSpeedModifier = 0;
+	constructor(maxSnowflakeCount = 110) {
+		EventService.subscribe(EventService.SCREEN_RESIZE, (dimensions) => {
+			this.dimensions = dimensions;
 
-		//only loop over left ear channel
-		values.splice(0, values.length / 2).forEach((value, index) => {
-			let existingBar = this.#visualiserBars[index];
-			const newHeight = (value ) * 2000;
-
-			if(!existingBar) {
-				existingBar = new Bar(this.#config.getConfigOption('slider_bar_width', 15), value);
-				this.#visualiserBars.push(existingBar);
-			}
-
-
-			//if the difference between the two heights is, idk some random value, or more, then snowflakes go brrrr
-			//bar should be at least 150px tall, don't want this eeffect on quiet songs
-			if(newHeight > 100 && existingBar.height - newHeight > 60) {
-				speedIncreaseBarCount++;
-				maxSpeedModifier = Math.max(clamp((existingBar.height - newHeight) / 40, 1, 5) * 8, maxSpeedModifier);
-			}
-
-			/*  okay so this looks hacky, however it's not
-				@line 16 we splice the values, which returns the first half off the array AKA the left channel
-			    That also changes the reference of values to only contain whatever is left after splicing AKA the right ear
-			 	So now we are looping over all the left ear frequencies, and we can get the right ear frequency with values[index] */
-			existingBar.height = newHeight;
+			this.reset();
+			this.recreateCanvas();
 		});
 
-		//if atleast 5 bars have a sudden increase in volume
-		if(speedIncreaseBarCount >= 3) {
-			this.#snowflakeSpeedModifier = maxSpeedModifier;
-		}
+		EventService.subscribe(EventService.AUDIO_VALUE_CHANGED, () => { this.parseAudioLevels() });
 
-		this.#spotifyDataService.startingX = this.getStartingXOfVisualiser();
-		this.#spotifyDataService.visualiserWidth = this.getVisualiserWidth();
-	}
-
-	constructor(maxSnowflakeCount = 110) {
 		this.#maxSnowflakeCount = maxSnowflakeCount;
-		this.#dimensions = new Vec2(window.innerWidth, window.innerHeight);
-		this.#spotifyDataService = new SpotifyDataService(this.#dimensions);
+		this.#spotifyDataService = new SpotifyDataService();
+		this.#controlButtons = new ControlButtons();
+		this.#visualiser = Visualiser.getInstance();
 
-		this.createCanvas();
 		this.handleNextFrame();
-
-		this.#config.onConfigChanged = (_) => {
-			this.#visualiserBars.forEach(x => x.width = this.#config.getConfigOption('slider_bar_width'));
-
-			if(this.#visualiserBars.length > 0) {
-				this.#spotifyDataService.startingX = this.getStartingXOfVisualiser();
-				this.#spotifyDataService.visualiserWidth = this.getVisualiserWidth();
-			}
-		}
-
-		this.reset();
 	}
 
 	reset = () => {
-		this.clearScreenFully();
+		this.#isPaused = false;
 		this.#snowflakes = [];
+		//don't reset temporarySnowflakes, helps easy in the wallpaper after being paused
+
 		this.generateRandomlyPlacedSnowflakes();
 	}
 
 	generateRandomlyPlacedSnowflakes = () => {
 		//generate between 75 and maxSnowFlakeCount (e.g. 100) random snowflakes to start us off
 		for(let i = 0; i < this.#maxSnowflakeCount; i++) {
-			let x = randomNumber(-50, this.#dimensions.x), y =  randomNumber(0, this.#dimensions.y);
-			let tries = 0;
+			const snowflake = this.generateRandomlyPlacedSnowflake();
 
-			//try to keep every snowflake away from other snowflakes for a maximum of 5 times, after which just accept your fate
-			while(tries <= 5 && (this.#snowflakes.filter(s => s.posX - x <= 50 && s.posY - y < 50)).length > 0) {
-				x =  randomNumber(-50, this.#dimensions.x);
-				y =  randomNumber(0, this.#dimensions.y);
-				tries++;
-			}
-
-			this.#snowflakes.push(new Snowflake(x, y));
+			this.#snowflakes.push(snowflake);
 		}
 	}
 
@@ -141,7 +96,9 @@ class ScreenManager {
 		this.render();
 	}
 
-	createCanvas = () => {
+	recreateCanvas = () => {
+		this.removeExistingCanvas();
+
 		const canvas = document.createElement('canvas');
 		canvas.width = this.#dimensions.x;
 		canvas.height = this.#dimensions.y;
@@ -151,19 +108,48 @@ class ScreenManager {
 		this.#context = canvas.getContext('2d');
 	}
 
+	removeExistingCanvas = () => {
+		const canvas = document.querySelector('canvas');
+		if(!canvas) {
+			return;
+		}
+
+		canvas.remove();
+	}
+
 	update = (dt) => {
-		this.#snowflakes.forEach((s, index) => {
+		this.generateTemporarySnow();
+
+		this.updateSnowflakes(this.#snowflakes, dt, true);
+		this.updateSnowflakes(this.#temporarySnowflakes, dt);
+
+		//decline the speed nearly instantly
+		this.#snowflakeSpeedModifier = clamp(this.#snowflakeSpeedModifier-(this.#snowflakeSpeedModifier * 0.8), 1, 5);
+
+		//RIP
+		this.#spotifyDataService.update(dt);
+	}
+
+	/**
+	 *
+	 * @param snowflakes An array of snowflakes
+	 * @param dt The deltatime
+	 * @param regenerate Whether to replace the snowflake with a fresh new one
+	 */
+	updateSnowflakes = (snowflakes, dt, regenerate = false) => {
+		snowflakes.forEach((s, index) => {
+
 			if(s.isSafeToDestroy()) {
-				this.#snowflakes.splice(index, 1); //remove the snowflake if out of bounds
-				this.#snowflakes.push(new Snowflake()); //add a new one at the start
-				return;
+				snowflakes.splice(index, 1); //remove the snowflake if out of bounds
+
+				if(regenerate) {
+					snowflakes.push(new Snowflake()); //add a new one at the start
+				}
+			} else {
+				s.update(dt, this.#snowflakeSpeedModifier);
 			}
 
-			s.update(dt, this.#snowflakeSpeedModifier);
 		});
-
-		this.#visualiserBars.forEach(b => b.update());
-		this.#spotifyDataService.update(dt);
 	}
 
 	render = () => {
@@ -172,11 +158,11 @@ class ScreenManager {
 
 		//update and draw snowflakes
 		this.drawSnowflakes();
-		this.drawControlsButton();
 
 		//update and draw synthesizer after snow
-		this.drawSynthesizer();
+		this.#visualiser.draw(this.#context);
 		this.#spotifyDataService.draw(this.#context);
+		this.#controlButtons.draw(this.#context);
 	}
 
 	/**
@@ -186,90 +172,59 @@ class ScreenManager {
 		this.#context.clearRect(0, 0, this.#dimensions.x, this.#dimensions.y);
 	}
 
-	/**
-	 * Clears the entire screen in one go
-	 */
-	clearScreenFully = () => {
-		this.#context.clearRect(0, 0, this.#dimensions.x, this.#dimensions.y);
-	}
-
 	drawSnowflakes = () => {
 		//draw snow
 		this.#snowflakes.forEach((s) => {
 			s.draw(this.#context);
 		});
-	}
 
-	drawSynthesizer = () => {
-		const x = this.getStartingXOfVisualiser();
-		const m = this.#config.getConfigOption('slider_bar_margin');
-
-		// if(!this.#visualiserBarsGradient)
-		// 	this.recalculateVisualiserBarsGradient();
-
-		this.#context.fillStyle = this.#config.createVisualiserGradient(this.#context, new Vec2(x, this.#dimensions.centerY), new Vec2(this.#dimensions.x, this.#dimensions.centerY));
-
-		this.#visualiserBars.forEach((bar, i) => {
-			const height = bar.height * this.#config.getConfigOption('slider_height_amplifier');
-
-			this.#context.fillRect(x + (bar.width + m) * i, this.#dimensions.centerY - height, bar.width, height)
-		});
-
-	}
-
-	getVisualiserWidth = () => {
-		const barWidth = this.#config.getConfigOption('slider_bar_width');
-		const marginBetweenBars = this.#config.getConfigOption('slider_bar_margin');
-
-		//gets the startingX, where the first bar should be drawn so the visualiser is exactly centered
-		return ((barWidth + marginBetweenBars) * this.#visualiserBars.length) - (marginBetweenBars - 1);
-
-	}
-
-	getStartingXOfVisualiser = () => {
-		return this.#dimensions.centerX - (this.getVisualiserWidth() / 2);
+		this.#temporarySnowflakes.forEach((s) => {
+			s.draw(this.#context);
+		})
 	}
 
 	handleClick = (e) => {
-		if(this.#spotifyDataService.isClickOnImage(e.clientX, e.clientY)) {
-			this.#spotifyDataService.togglePlayPause();
-		} else if(this.isClickOnNextButton(e.clientX, e.clientY)) {
-			this.#spotifyDataService.nextSong()
-				.then((r) => {
-					dump(r);
-				})
-				.catch((error) => {
-				dump(error);
-			});
-		} else if(this.isClickOnPreviousButton(e.clientX, e.clientY)) {
-			this.#spotifyDataService.previousSong()
-				.then((r) => {
-					dump(r);
-				})
-				.catch((error) => {
-					dump(error);
-				});
-		}
-
-	}
-
-	isClickOnNextButton = (x, y) => {
-		return (x >= this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth && x <=this.getStartingXOfVisualiser() + this.getVisualiserWidth()) &&
-			(y >= this.#dimensions.centerY + 45 && y <= this.#dimensions.centerY + 45 + this.#controlButtonsHeight);
-	}
-
-	isClickOnPreviousButton = (x, y) => {
-		return (x >= this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth * 2 - 13 && x <= this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth - 13) &&
-			(y >= this.#dimensions.centerY + 45 && y <= this.#dimensions.centerY + 45 + this.#controlButtonsHeight);
-	}
-
-	drawControlsButton = () => {
-		if(!this.#config.getBooleanOption('cbx_show_controls')) {
+		if(this.#spotifyDataService.handleClick(e) || this.#controlButtons.handleClick(e)) {
 			return;
 		}
 
-		this.#context.drawImage(this.#nextButton, this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth, this.#dimensions.centerY + 45, this.#controlButtonsWidth, this.#controlButtonsHeight);
-		this.#context.drawImage(this.#previousButton, this.getStartingXOfVisualiser() + this.getVisualiserWidth() - this.#controlButtonsWidth * 2 - 13, this.#dimensions.centerY + 45, this.#controlButtonsWidth, this.#controlButtonsHeight);
+		this.#isMouseDown = true;
+		this.mouseDownEvent = e;
+	}
 
+	handleClickUp = (e) => {
+		this.#isMouseDown = false;
+	}
+
+	parseAudioLevels = (audio) => {
+		//if atleast 5 bars have a sudden increase in volume
+		if(this.#visualiser.barsChangedWithLatestUpdate() >= 3) {
+			this.#snowflakeSpeedModifier = this.#visualiser.maxBarChangeWithLatestUpdate();
+		}
+
+		this.#spotifyDataService.startingX = this.#visualiser.getStartingXOfVisualiser();
+		this.#spotifyDataService.visualiserWidth = this.#visualiser.getVisualiserWidth();
+	}
+
+	generateTemporarySnow = () => {
+		if(!this.#isMouseDown || !this.mouseDownEvent) {
+			return;
+		}
+
+		this.#temporarySnowflakes.push(new Snowflake(this.mouseDownEvent.clientX, this.mouseDownEvent.clientY));
+	}
+
+	generateRandomlyPlacedSnowflake = () => {
+		let x = randomNumber(-50, this.#dimensions.x), y =  randomNumber(0, this.#dimensions.y);
+		let tries = 0;
+
+		//try to keep every snowflake away from other snowflakes for a maximum of 5 times, after which just accept your fate
+		while(tries <= 5 && (this.#snowflakes.filter(s => s.posX - x <= 50 && s.posY - y < 50)).length > 0) {
+			x =  randomNumber(-50, this.#dimensions.x);
+			y =  randomNumber(0, this.#dimensions.y);
+			tries++;
+		}
+
+		return new Snowflake(x, y);
 	}
 }

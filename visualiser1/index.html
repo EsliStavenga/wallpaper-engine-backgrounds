@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Test</title>
+	<title>Visualiser</title>
 	<link rel="stylesheet" href="css/body.css" />
 	<link rel="stylesheet" href="css/test.css" />
 </head>
 <body>
 <div id="test"></div>
 
-<script src="js/VisualiserEvent.js"></script>
+<script src="js/Services/EventService.js"></script>
 <script src="js/Config.js"></script>
 <script src="js/AccessToken.js"></script>
+<script src="js/Renderable.js"></script>
+<script src="js/Services/CalculationService.js"></script>
 <script src="js/Services/ImageService.js"></script>
 <script src="js/Services/DateService.js"></script>
 <script src="js/Services/SpotifyConnectorService.js"></script>
@@ -18,52 +20,54 @@
 <script src="js/Vec2.js"></script>
 <script src="js/Bar.js"></script>
 <script src="js/Snowflake.js"></script>
+<script src="js/Visualiser.js"></script>
+<script src="js/ControlButtons.js"></script>
 <script src="js/ScreenManager.js"></script>
 
 <script>
-	const screenManager = new ScreenManager();
-	let lastAudioDateTime = DateService.getNowTimestamp();
-	var _dump = false;
-
 	function dump(...val) {
-		_dump = true;
 		val.forEach(x => {
-
 			document.getElementById('test').innerText += JSON.stringify(x) + '\n';
 		})
 	}
 
-	function audioListener(audio) {
-		const now = DateService.getNowTimestamp();
-		const dt = (now - lastAudioDateTime) / 1000;
+	window.onload = () => {
+		const screenManager = new ScreenManager();
+		let lastAudioDateTime = DateService.getNowTimestamp();
 
-		//only update every 0.0075s so it's easier on the eyes
-		if(dt < 0.0075) {
-			return;
+		updateDimensions();
 
+		function applyProperties(properties) {
+			Config.getInstance().config = properties;
 		}
 
-		lastAudioDateTime = now;
-		screenManager.audio = (audio);
-	}
+		function audioListener(audio) {
+			const now = DateService.getNowTimestamp();
+			const dt = (now - lastAudioDateTime) / 1000;
 
-	function applyProperties(properties) {
-		Config.getInstance().config = properties;
-	}
+			//only update every 0.0075s so it's easier on the eyes
+			if(dt < 0.0075) {
+				return;
+			}
 
-	//TODO on start generate random positions
-	//TODO collide snow with icons
+			lastAudioDateTime = now;
+			EventService.fire(EventService.AUDIO_VALUE_CHANGED, audio);
+		}
 
-	//
-	// audioListener([10, 2, 3, 5, ]);
-
-	window.onload = () => {
 		window.onresize = () => {
-			screenManager.dimensions = new Vec2(window.innerWidth, window.innerHeight);
+			updateDimensions();
+		}
+
+		document.body.onmousedown = (e) => {
+			screenManager.handleClick(e);
+		}
+
+		document.body.onmousemove = (e) => {
+			screenManager.mouseDownEvent = e;
 		}
 
 		document.body.onmouseup = (e) => {
-			screenManager.handleClick(e);
+			screenManager.handleClickUp(e);
 		}
 
 		window.wallpaperRegisterAudioListener(audioListener);
@@ -76,14 +80,17 @@
 		}
 	};
 
-	function randomNumber(min, max) {
+	const updateDimensions = () => {
+		Config.getInstance().dimensions = (new Vec2(window.innerWidth, window.innerHeight));
+	}
+
+	const randomNumber = (min, max) => {
 		return Math.random() * (max - min) + min;
 	}
 
-	function clamp(val, min, max) {
+	const clamp = (val, min, max) => {
 		return Math.max(min, Math.min(val, max));
 	}
-
 </script>
 
 </body>

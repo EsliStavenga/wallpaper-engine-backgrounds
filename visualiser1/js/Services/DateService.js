@@ -1,6 +1,6 @@
 class DateService {
 
-	static getNowTimestamp() {
+	static getNowTimestamp = () => {
 		return window.performance && window.performance.now ? window.performance.now() : new Date().getTime();
 	}
 

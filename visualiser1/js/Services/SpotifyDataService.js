@@ -1,8 +1,6 @@
-class SpotifyDataService {
+class SpotifyDataService extends Renderable {
 
 	#isPausedImage;
-	#context;
-	#screenDimensions;
 
 	#spotify;
 	#spotifyNowPlayingData;
@@ -45,12 +43,18 @@ class SpotifyDataService {
 		return this.#songSubtitleFontSize;
 	}
 
-	constructor(screenDimensions) {
+	constructor() {
+		super();
+
 		this.#spotify = new SpotifyConnectorService();
-		this.#screenDimensions = screenDimensions;
 		this.#isPausedImage = this.createAlbumCoverImage('img/paused.png', 1);
 
 		this.startRequestLoop();
+
+		EventService.subscribe(EventService.VISUALISER_DIMENSIONS_CHANGED, (dimensions) =>  {
+			this.startingX = dimensions.startingX;
+			this.visualiserWidth = dimensions.width;
+		});
 	}
 
 	update = (dt) => {
@@ -60,15 +64,17 @@ class SpotifyDataService {
 	}
 
 	draw = (context) => {
-		this.#context = context;
+		return new Promise((resolve) => {
+			this._draw(context);
 
-		// dump(this.#spotifyNowPlayingData);
+			if(!this.#spotifyNowPlayingData) {
+				this.drawNothingPlaying();
+			} else {
+				this.drawPlayingSongData();
+			}
 
-		if(!this.#spotifyNowPlayingData) {
-			this.drawNothingPlaying();
-		} else {
-			this.drawPlayingSongData();
-		}
+			resolve(true);
+		});
 	}
 
 	requestSpotifyData = () => {
@@ -157,49 +163,82 @@ class SpotifyDataService {
 		}
 	}
 
+	handleClick = (e) => {
+		const isClick = this.isClickOnImage(e.clientX, e.clientY);
+
+		if(isClick) {
+			this.togglePlayPause();
+		}
+
+		return isClick;
+	}
+
 	isClickOnImage = (x, y) => {
-		return (x >= this.#startingX && x <= this.#startingX + this.#imageDimensions ) &&
-			(y >= this.#screenDimensions.centerY && y <= this.#screenDimensions.centerY + this.#imageDimensions);
+		return CalculationService.isWithinBoundingBox(x, y, this.getCoverArtPlacement(true));
 	}
 
 	drawAlbumCover = (image) => {
-		this.#context.drawImage(image, this.#startingX, this.#screenDimensions.centerY + 30, this.#imageDimensions, this.#imageDimensions);
+		const [lowerX, lowerY, upperX, upperY] = this.getCoverArtPlacement(false);
+
+		this._context.drawImage(image, lowerX, lowerY, upperX, upperY);
 	}
 
 	drawSongTitle = (text) => {
 		this.setFont(this.#songTitleFontSize);
-		this.#context.fillStyle = 'rgb(255, 255, 255)';
+		this._context.fillStyle = 'rgb(255, 255, 255)';
 
-		this.#context.fillText(text, this.#startingX + this.#currentAlbumCover.width + 10, this.#screenDimensions.centerY + this.#songDataTopMargin);
+		this._context.fillText(text, this.#startingX + this.#currentAlbumCover.width + 10, this._screenDimensions.centerY + this.#songDataTopMargin);
 	}
 
 	drawSongSubtitle = (text) => {
 		this.setFont(this.#songSubtitleFontSize);
-		this.#context.fillStyle = 'rgb(255, 255, 255)';
+		this._context.fillStyle = 'rgb(255, 255, 255)';
 
-		this.#context.fillText(text, this.#startingX + this.#currentAlbumCover.width + 10, this.#screenDimensions.centerY + this.#songTitleFontSize + this.#songDataTopMargin);
+		this._context.fillText(text, this.#startingX + this.#currentAlbumCover.width + 10, this._screenDimensions.centerY + this.#songTitleFontSize + this.#songDataTopMargin);
 	}
 
 	setFont = (fontSize) => {
-		this.#context.font = `${fontSize}px Arial Black`;
+		this._context.font = `${fontSize}px Arial Black`;
 	}
 
 	createAlbumCoverImage = (src, isLocalFile = '0') => {
-		const image = ImageService.createImageFromSource(src, () => {
-			this.drawAlbumCover(image)
+		return ImageService.createImageFromSource(src, () => {
 		}, {
-			'is-local-file': isLocalFile.toString()
+			width: this.#imageDimensions,
+			height: this.#imageDimensions
+		}, {
+			'is-local-file': isLocalFile.toString(),
+			'height': this.#imageDimensions,
+			'width': this.#imageDimensions
 		});
-
-		return image;
 	}
 
 	drawProgressBar = () => {
-		this.#context.fillStyle = Config.getInstance().createVisualiserGradient(this.#context, new Vec2(this.#startingX,  this.#screenDimensions.centerY), new Vec2(this.#screenDimensions.x, this.#screenDimensions.centerY));
-		this.#context.fillRect(this.#startingX, this.#screenDimensions.centerY + 1 , clamp(this.#spotifyProgress, 0, this.#visualiserWidth), 5);
+		this._context.fillStyle = this._config.createVisualiserGradient(this._context, new Vec2(this.#startingX,  this._screenDimensions.centerY), new Vec2(this._screenDimensions.x, this._screenDimensions.centerY));
+		this._context.fillRect(this.#startingX, this._screenDimensions.centerY + 1 , clamp(this.#spotifyProgress, 0, this.#visualiserWidth), 5);
 	}
 
 	startRequestLoop = () => {
 		this.#requestLoop = setInterval(this.requestSpotifyData, 1000);
+	}
+
+	/**
+	 *
+	 * @param isAbsolute Whether to return absolute or relative values
+	 * @return {(*|number)[]}
+	 */
+	getCoverArtPlacement = (isAbsolute = false) => {
+		const lowerX = this.#startingX;
+		const lowerY = this._screenDimensions.centerY + 30;
+
+		let upperX = (isAbsolute ? lowerX : 0 ) + this.#imageDimensions;
+		let upperY = (isAbsolute ? lowerY : 0 ) + this.#imageDimensions;
+
+		return [
+			lowerX,
+			lowerY,
+			upperX,
+			upperY
+		];
 	}
 }

@@ -2,17 +2,8 @@ class Config {
 
 	defaultColorOption = '0.76470588235 0.76470588235 0.76470588235';
 	#config = {};
-	#valueChangedEvent = new VisualiserEvent();
 
 	static #instance = undefined;
-
-	/**
-	 * Add an EventListener to be called whenever a config option changes
-	 * @param {function} callback The function to be called
-	 */
-	set onConfigChanged(callback) {
-		this.#valueChangedEvent.addListener(callback);
-	}
 
 	get config() {
 		return this.#config;
@@ -20,10 +11,16 @@ class Config {
 
 	set config(values) {
 		Object.assign(this.#config, values);
-		this.#valueChangedEvent.call(null);
+		EventService.fire(EventService.CONFIG_VALUE_CHANGED);
 	}
 
-	constructor() {
+	set dimensions(value) {
+		this.config['dimensions'] = value;
+		EventService.fire(EventService.SCREEN_RESIZE, value);
+	}
+
+	get dimensions() {
+		return this.config['dimensions'];
 	}
 
 	/**
@@ -31,7 +28,7 @@ class Config {
 	 *
 	 * @return {self} An instance of Config
 	 */
-	static getInstance() {
+	static getInstance = () => {
 		if(!this.#instance) {
 			this.#instance = new this();
 		}
@@ -45,7 +42,7 @@ class Config {
 	 * @param {string} option The config option
 	 * @return {boolean} True if the key exists, false otherwise
 	 */
-	hasConfigOption(option) {
+	hasConfigOption = (option) => {
 		return !!(this.config[option]);
 	}
 
@@ -56,7 +53,7 @@ class Config {
 	 * @param {string} option The config option
 	 * @return {string} rgb(r, g ,b)
 	 */
-	getColorOption(option) {
+	getColorOption = (option) => {
 		const value = this.config[option]?.value ?? this.defaultColorOption;
 		const normalizedArray = value.split(' ');
 		const rgbArray = normalizedArray.map(x => Math.round(x * 255));
@@ -72,12 +69,12 @@ class Config {
 	 * @param {string|boolean|int} [_default=''] The default value to return
 	 * @return {string} The value of the config optoin
 	 */
-	getConfigOption(option, _default = '') {
+	getConfigOption = (option, _default = '') => {
 		return this.config[option]?.value || _default;
 	}
 
-	getBooleanOption(option) {
-		return this.getConfigOption(option) !== 'true';
+	getBooleanOption = (option) => {
+		return this.getConfigOption(option).toString() === 'true';
 	}
 
 	/**
@@ -88,7 +85,7 @@ class Config {
 	 *
 	 * @return {CanvasGradient}
 	 */
-	createVisualiserGradient(context, position, dimensions) {
+	createVisualiserGradient = (context, position, dimensions) => {
 		const gradient = context.createLinearGradient(position.x, position.centerY, dimensions.x - position.x, dimensions.centerY);
 		gradient.addColorStop(0, this.getColorOption('cp_gradient_bar_0'));
 		gradient.addColorStop(0.25, this.getColorOption('cp_gradient_bar_1'));

@@ -11,33 +11,34 @@ class SpotifyConnectorService {
 
 	constructor() {
 		this.#config = Config.getInstance();
-		this.#config.onConfigChanged = (_) => {
+
+		EventService.subscribe(EventService.CONFIG_VALUE_CHANGED, () => {
 			if(this.#config.hasConfigOption('txt_spotify_refresh_token')) {
 				this.#accessToken.refreshToken = this.#config.getConfigOption('txt_spotify_refresh_token');
 				this.authorise();
 			}
-		}
+		});
 	}
 
-	resume() {
+	resume = () => {
 		return new Promise((resolve, reject) => {
 			this.sendRequest(`${this.#basePlayerURL}/play`,'PUT', resolve, reject);
 		});
 	}
 
-	pause() {
+	pause = () => {
 		return new Promise((resolve, reject) => {
 			this.sendRequest(`${this.#basePlayerURL}/pause`,'PUT', resolve, reject);
 		});
 	}
 
-	next() {
+	next = () => {
 		return new Promise((resolve, reject) => {
 			this.sendRequest(`${this.#basePlayerURL}/next`, 'POST', resolve, reject);
 		});
 	}
 
-	previous() {
+	previous = () => {
 		return new Promise((resolve, reject) => {
 			this.sendRequest(`${this.#basePlayerURL}/previous`, 'POST', resolve, reject);
 		});
@@ -48,7 +49,7 @@ class SpotifyConnectorService {
 	 *
 	 * @return {Promise<undefined>|Promise<undefined>}
 	 */
-	authorise() {
+	authorise = () => {
 		if(this.#accessToken && !this.#accessToken.hasExpired()) {
 			return new Promise(r => r());
 		}
@@ -79,7 +80,7 @@ class SpotifyConnectorService {
 	 *
 	 * @return {Promise<string>} The response data in JSON format
 	 */
-	getCurrentlyPlaying() {
+	getCurrentlyPlaying = () => {
 
 		return new Promise((resolve, reject) => {
 			this.authorise().then(() => {
@@ -88,7 +89,7 @@ class SpotifyConnectorService {
 		});
 	}
 
-	sendRequest(url, method, resolve, reject) {
+	sendRequest = (url, method, resolve, reject) => {
 		const requestOptions = {
 			method: method,
 			headers: this.getHeaders(),
@@ -105,7 +106,7 @@ class SpotifyConnectorService {
 	 * Gets the Bearer token header if the access token is valid, or the Basic header if the access token is not valid
 	 * @return {string}
 	 */
-	getAuthToken() {
+	getAuthToken = () => {
 		if(this.#accessToken && !this.#accessToken.hasExpired()) {
 			return `Bearer ${this.#accessToken.accessToken}`;
 		}
@@ -118,7 +119,7 @@ class SpotifyConnectorService {
 	 *
 	 * @return {Headers}
 	 */
-	getHeaders() {
+	getHeaders = () => {
 		const headers = new Headers();
 		headers.append("Authorization", this.getAuthToken());
 		headers.append("Accept", 'application/json');
@@ -132,7 +133,7 @@ class SpotifyConnectorService {
 	 *
 	 * @return {URLSearchParams}
 	 */
-	getAuthBody() {
+	getAuthBody = () => {
 		return this.buildBody({
 			refresh_token: this.#accessToken.refreshToken,
 			grant_type: 'refresh_token'
@@ -143,7 +144,7 @@ class SpotifyConnectorService {
 	 * @param data An object with data {key: value, scope: 'user-read-playback-state'}
 	 * @return {URLSearchParams} The body for the fetch function
 	 */
-	buildBody(data) {
+	buildBody = (data) => {
 		const params = new URLSearchParams();
 
 		for(const key in data) {

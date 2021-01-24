@@ -4,9 +4,17 @@
 	{
 		"properties" : 
 		{
+			"cbx_confetti" : 
+			{
+				"index" : 10,
+				"order" : 113,
+				"text" : "Snow/Confetti",
+				"type" : "bool",
+				"value" : false
+			},
 			"cbx_show_controls" : 
 			{
-				"index" : 13,
+				"index" : 9,
 				"order" : 113,
 				"text" : "Show controls",
 				"type" : "bool",
@@ -14,7 +22,7 @@
 			},
 			"clientid" : 
 			{
-				"index" : 9,
+				"index" : 13,
 				"order" : 109,
 				"text" : "Client ID",
 				"type" : "textinput",
@@ -22,7 +30,7 @@
 			},
 			"clientsecret" : 
 			{
-				"index" : 10,
+				"index" : 14,
 				"order" : 110,
 				"text" : "Client Secret",
 				"type" : "textinput",
@@ -138,6 +146,6 @@
 		"supportsaudioprocessing" : true
 	},
 	"title" : "Visualiser",
-	"type" : "web",
+	"type" : "Web",
 	"version" : 0
 }
