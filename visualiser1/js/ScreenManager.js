@@ -75,15 +75,12 @@ class ScreenManager {
 		}
 	}
 
-
 	handleNextFrame = () => {
 		requestAnimationFrame(this.handleNextFrame);
 
 		const now = DateService.getNowTimestamp();
 		const dt = (now - this.#lastFrameDateTime) / 1000;
 		this.#lastFrameDateTime = now;
-		//TODO on click
-		// this.#snowflakes.push(new Snowflake(200, 100));
 
 		//This should be after dt calculation else the dt will be insane
 		if(this.#isPaused) {

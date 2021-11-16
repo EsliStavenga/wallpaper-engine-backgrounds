@@ -62,7 +62,7 @@ class Visualiser extends Renderable {
 	}
 
 	getStartingXOfVisualiser = () => {
-		return this._screenDimensions.centerX - (this.getVisualiserWidth() / 2);
+		return parseInt(this._config.getConfigOption('slider_bar_offset_horizontal', 0)) + this._screenDimensions.centerX - (this.getVisualiserWidth() / 2);
 	}
 
 	updateBars = () => {

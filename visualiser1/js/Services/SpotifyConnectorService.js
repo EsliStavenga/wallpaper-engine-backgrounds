@@ -84,7 +84,7 @@ class SpotifyConnectorService {
 
 		return new Promise((resolve, reject) => {
 			this.authorise().then(() => {
-				this.sendRequest(`${this.#basePlayerURL}/currently-playing?market=ES`,'GET', resolve, reject);
+				this.sendRequest(`${this.#basePlayerURL}/currently-playing?market=NL`,'GET', resolve, reject);
 			});
 		});
 	}
@@ -111,7 +111,7 @@ class SpotifyConnectorService {
 			return `Bearer ${this.#accessToken.accessToken}`;
 		}
 
-		return `Basic ${btoa(`${this.#config.getConfigOption('clientid')}:${this.#config.getConfigOption('clientsecret')}`)}`;
+		return `Basic ${btoa(`${this.#config.getConfigOption('clientid', 'b7126d28442c46a686cbce54e7d81790')}:${this.#config.getConfigOption('clientsecret', '5b03c385f0e5486ebd69cedc81b3fe18')}`)}`;
 	}
 
 	/**

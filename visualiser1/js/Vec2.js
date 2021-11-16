@@ -2,10 +2,12 @@ class Vec2 {
 
 	x;
 	y;
+	_config;
 
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
+		this._config = Config.getInstance();
 	}
 
 
@@ -22,7 +24,9 @@ class Vec2 {
 	 * @return {number}
 	 */
 	get centerY() {
-		return this.y / 2;
+		const verticalOffset = parseInt(this._config.getConfigOption('slider_bar_offset_vertical', 0));
+
+		return this.y / 2 + verticalOffset;
 	}
 
 
